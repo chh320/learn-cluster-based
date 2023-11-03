@@ -1,0 +1,7 @@
+target("meshSimplify")
+    set_kind("static")
+    add_files("*.cpp")
+    add_deps("mesh")
+    add_packages("glm")
+    add_includedirs(".",{public=true})
+target_end()

@@ -1,0 +1,122 @@
+F1102 14:15:53.024] Error: EXCEPTION_ACCESS_VIOLATION
+00007FFEDDD1F1B7 (ntdll): (filename not available): _C_specific_handler
+00007FFEDDD3449F (ntdll): (filename not available): _chkstk
+00007FFEDDCAE456 (ntdll): (filename not available): RtlFindCharInUnicodeString
+00007FFEDDD3348E (ntdll): (filename not available): KiUserExceptionDispatcher
+C:\Users\chh320\Desktop\vulkan-nanite\encode\Encode.h (35): Core::Encode::PackingMeshData
+C:\Users\chh320\Desktop\vulkan-nanite\application\main.cpp (34): main
+D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl (288): __scrt_common_main_seh
+00007FFEDCD9257D (KERNEL32): (filename not available): BaseThreadInitThunk
+00007FFEDDCEAA78 (ntdll): (filename not available): RtlUserThreadStart
+
+F1102 14:17:01.701] Error: EXCEPTION_ACCESS_VIOLATION
+00007FFEDDD1F1B7 (ntdll): (filename not available): _C_specific_handler
+00007FFEDDD3449F (ntdll): (filename not available): _chkstk
+00007FFEDDCAE456 (ntdll): (filename not available): RtlFindCharInUnicodeString
+00007FFEDDD3348E (ntdll): (filename not available): KiUserExceptionDispatcher
+C:\Users\chh320\Desktop\vulkan-nanite\encode\Encode.h (35): Core::Encode::PackingMeshData
+C:\Users\chh320\Desktop\vulkan-nanite\application\main.cpp (34): main
+D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl (288): __scrt_common_main_seh
+00007FFEDCD9257D (KERNEL32): (filename not available): BaseThreadInitThunk
+00007FFEDDCEAA78 (ntdll): (filename not available): RtlUserThreadStart
+
+F1102 14:17:59.870] Error: EXCEPTION_ACCESS_VIOLATION
+00007FFEDDD1F1B7 (ntdll): (filename not available): _C_specific_handler
+00007FFEDDD3449F (ntdll): (filename not available): _chkstk
+00007FFEDDCAE456 (ntdll): (filename not available): RtlFindCharInUnicodeString
+00007FFEDDD3348E (ntdll): (filename not available): KiUserExceptionDispatcher
+C:\Users\chh320\Desktop\vulkan-nanite\encode\Encode.h (35): Core::Encode::PackingMeshData
+C:\Users\chh320\Desktop\vulkan-nanite\application\main.cpp (34): main
+D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl (288): __scrt_common_main_seh
+00007FFEDCD9257D (KERNEL32): (filename not available): BaseThreadInitThunk
+00007FFEDDCEAA78 (ntdll): (filename not available): RtlUserThreadStart
+
+F1102 14:19:36.575] Error: EXCEPTION_ACCESS_VIOLATION
+00007FFEDDD1F1B7 (ntdll): (filename not available): _C_specific_handler
+00007FFEDDD3449F (ntdll): (filename not available): _chkstk
+00007FFEDDCAE456 (ntdll): (filename not available): RtlFindCharInUnicodeString
+00007FFEDDD3348E (ntdll): (filename not available): KiUserExceptionDispatcher
+C:\Users\chh320\Desktop\vulkan-nanite\encode\Encode.h (35): Core::Encode::PackingMeshData
+C:\Users\chh320\Desktop\vulkan-nanite\application\main.cpp (34): main
+D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl (288): __scrt_common_main_seh
+00007FFEDCD9257D (KERNEL32): (filename not available): BaseThreadInitThunk
+00007FFEDDCEAA78 (ntdll): (filename not available): RtlUserThreadStart
+
+F1102 14:22:44.723] Error: EXCEPTION_ACCESS_VIOLATION
+00007FFEDDD1F1B7 (ntdll): (filename not available): _C_specific_handler
+00007FFEDDD3449F (ntdll): (filename not available): _chkstk
+00007FFEDDCAE456 (ntdll): (filename not available): RtlFindCharInUnicodeString
+00007FFEDDD3348E (ntdll): (filename not available): KiUserExceptionDispatcher
+C:\Users\chh320\Desktop\vulkan-nanite\encode\Encode.h (35): Core::Encode::PackingMeshData
+C:\Users\chh320\Desktop\vulkan-nanite\application\main.cpp (34): main
+D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl (288): __scrt_common_main_seh
+00007FFEDCD9257D (KERNEL32): (filename not available): BaseThreadInitThunk
+00007FFEDDCEAA78 (ntdll): (filename not available): RtlUserThreadStart
+
+F1102 14:24:08.435] Error: EXCEPTION_ACCESS_VIOLATION
+00007FFEDDD1F1B7 (ntdll): (filename not available): _C_specific_handler
+00007FFEDDD3449F (ntdll): (filename not available): _chkstk
+00007FFEDDCAE456 (ntdll): (filename not available): RtlFindCharInUnicodeString
+00007FFEDDD3348E (ntdll): (filename not available): KiUserExceptionDispatcher
+C:\Users\chh320\Desktop\vulkan-nanite\encode\Encode.h (35): Core::Encode::PackingMeshData
+C:\Users\chh320\Desktop\vulkan-nanite\application\main.cpp (41): main
+D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl (288): __scrt_common_main_seh
+00007FFEDCD9257D (KERNEL32): (filename not available): BaseThreadInitThunk
+00007FFEDDCEAA78 (ntdll): (filename not available): RtlUserThreadStart
+
+F1102 15:47:22.929] Error: STATUS_CPP_EH_EXCEPTION
+00007FFEDDD1F1B7 (ntdll): (filename not available): _C_specific_handler
+00007FFEDDD3449F (ntdll): (filename not available): _chkstk
+00007FFEDDCAE456 (ntdll): (filename not available): RtlFindCharInUnicodeString
+00007FFEDDCE4465 (ntdll): (filename not available): RtlRaiseException
+00007FFEDB1E4FFC (KERNELBASE): (filename not available): RaiseException
+D:\a\_work\1\s\src\vctools\crt\vcruntime\src\eh\throw.cpp (75): _CxxThrowException
+C:\Users\chh320\Desktop\vulkan-nanite\vk\VkConfig.cpp (8): Vk::Check
+C:\Users\chh320\Desktop\vulkan-nanite\vk\Buffer.h (19): Vk::Buffer::Buffer
+C:\Users\chh320\Desktop\vulkan-nanite\vk\VkApplication.cpp (158): Vk::Application::CreateInstanceBuffers
+C:\Users\chh320\Desktop\vulkan-nanite\vk\VkApplication.cpp (39): Vk::Application::Run
+C:\Users\chh320\Desktop\vulkan-nanite\application\main.cpp (65): main
+D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl (288): __scrt_common_main_seh
+00007FFEDCD9257D (KERNEL32): (filename not available): BaseThreadInitThunk
+00007FFEDDCEAA78 (ntdll): (filename not available): RtlUserThreadStart
+
+F1102 16:08:40.514] Error: EXCEPTION_ACCESS_VIOLATION
+00007FFEDDD1F1B7 (ntdll): (filename not available): _C_specific_handler
+00007FFEDDD3449F (ntdll): (filename not available): _chkstk
+00007FFEDDCAE456 (ntdll): (filename not available): RtlFindCharInUnicodeString
+00007FFEDDD3348E (ntdll): (filename not available): KiUserExceptionDispatcher
+E:\Soft_ware\VisualStudio\VC\Tools\MSVC\14.29.30133\include\xmemory (674): std::_Default_allocator_traits<std::allocator<unsigned int> >::construct<unsigned int,unsigned int const &>
+E:\Soft_ware\VisualStudio\VC\Tools\MSVC\14.29.30133\include\vector (714): std::vector<unsigned int,std::allocator<unsigned int> >::_Emplace_back_with_unused_capacity<unsigned int const &>
+E:\Soft_ware\VisualStudio\VC\Tools\MSVC\14.29.30133\include\vector (731): std::vector<unsigned int,std::allocator<unsigned int> >::emplace_back<unsigned int const &>
+E:\Soft_ware\VisualStudio\VC\Tools\MSVC\14.29.30133\include\vector (744): std::vector<unsigned int,std::allocator<unsigned int> >::push_back
+C:\Users\chh320\Desktop\vulkan-nanite\vk\VkApplication.cpp (155): Vk::Application::CreateInstanceBuffers
+C:\Users\chh320\Desktop\vulkan-nanite\vk\VkApplication.cpp (39): Vk::Application::Run
+C:\Users\chh320\Desktop\vulkan-nanite\application\main.cpp (65): main
+D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl (288): __scrt_common_main_seh
+00007FFEDCD9257D (KERNEL32): (filename not available): BaseThreadInitThunk
+00007FFEDDCEAA78 (ntdll): (filename not available): RtlUserThreadStart
+
+F1102 16:16:20.823] Error: EXCEPTION_ACCESS_VIOLATION
+00007FFEDDD1F1B7 (ntdll): (filename not available): _C_specific_handler
+00007FFEDDD3449F (ntdll): (filename not available): _chkstk
+00007FFEDDCAE456 (ntdll): (filename not available): RtlFindCharInUnicodeString
+00007FFEDDD3348E (ntdll): (filename not available): KiUserExceptionDispatcher
+C:\Users\chh320\Desktop\vulkan-nanite\vk\VkApplication.cpp (158): Vk::Application::CreateInstanceBuffers
+C:\Users\chh320\Desktop\vulkan-nanite\vk\VkApplication.cpp (39): Vk::Application::Run
+C:\Users\chh320\Desktop\vulkan-nanite\application\main.cpp (65): main
+D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl (288): __scrt_common_main_seh
+00007FFEDCD9257D (KERNEL32): (filename not available): BaseThreadInitThunk
+00007FFEDDCEAA78 (ntdll): (filename not available): RtlUserThreadStart
+
+F1102 16:21:40.181] Error: EXCEPTION_ACCESS_VIOLATION
+00007FFEDDD1F1B7 (ntdll): (filename not available): _C_specific_handler
+00007FFEDDD3449F (ntdll): (filename not available): _chkstk
+00007FFEDDCAE456 (ntdll): (filename not available): RtlFindCharInUnicodeString
+00007FFEDDD3348E (ntdll): (filename not available): KiUserExceptionDispatcher
+C:\Users\chh320\Desktop\vulkan-nanite\vk\VkApplication.cpp (159): Vk::Application::CreateInstanceBuffers
+C:\Users\chh320\Desktop\vulkan-nanite\vk\VkApplication.cpp (39): Vk::Application::Run
+C:\Users\chh320\Desktop\vulkan-nanite\application\main.cpp (65): main
+D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl (288): __scrt_common_main_seh
+00007FFEDCD9257D (KERNEL32): (filename not available): BaseThreadInitThunk
+00007FFEDDCEAA78 (ntdll): (filename not available): RtlUserThreadStart
+
