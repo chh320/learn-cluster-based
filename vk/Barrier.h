@@ -28,19 +28,21 @@ namespace Vk {
 	};
 
 	struct BufferBarrier {
-		Buffer buffer;
+		VkBuffer buffer;
+		uint32_t size;
 		VkPipelineStageFlags2 srcStage;
 		VkAccessFlags2 srcAccess;
 		VkPipelineStageFlags2 dstStage;
 		VkAccessFlags2 dstAccess;
 
 		BufferBarrier(
-			Buffer buffer,
+			VkBuffer buffer,
+			uint32_t size,
 			VkPipelineStageFlags2 srcStage,
 			VkAccessFlags2 srcAccess,
 			VkPipelineStageFlags2 dstStage,
 			VkAccessFlags2 dstAccess
-		) : buffer(buffer), srcStage(srcStage), srcAccess(srcAccess), dstStage(dstStage), dstAccess(dstAccess) {}
+		) : buffer(buffer), size(size), srcStage(srcStage), srcAccess(srcAccess), dstStage(dstStage), dstAccess(dstAccess) {}
 	};
 
 	class Barrier final {
@@ -72,9 +74,9 @@ namespace Vk {
 				bufferBarrier.srcAccessMask = barrier.srcAccess;
 				bufferBarrier.dstStageMask = barrier.dstStage;
 				bufferBarrier.dstAccessMask = barrier.dstAccess;
-				bufferBarrier.buffer = barrier.buffer.GetBuffer();
+				bufferBarrier.buffer = barrier.buffer;
 				bufferBarrier.offset = 0;
-				bufferBarrier.size = barrier.buffer.GetSize();
+				bufferBarrier.size = barrier.size;
 
 				bufferMemoryBarriers.push_back(bufferBarrier);
 			}

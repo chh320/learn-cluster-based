@@ -49,7 +49,7 @@ namespace Vk {
 		glfwInit();
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-		//glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+		glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
 		_window = glfwCreateWindow(width, height, "Lite Nanite", nullptr, nullptr);
 		glfwSetWindowUserPointer(_window, this);
@@ -57,6 +57,7 @@ namespace Vk {
 		glfwSetCursorPosCallback(_window, GlfwCursorPositionCallback);
 		glfwSetMouseButtonCallback(_window, GlfwMouseButtonCallback);
 		glfwSetScrollCallback(_window, GlfwScrollCallback);
+
 	}
 
 	Window::~Window() {

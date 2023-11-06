@@ -6,6 +6,7 @@
 #include "DescriptorSetManager.h"
 #include "Device.h"
 #include "GraphicsPipeline.h"
+#include "ComputePipeline.h"
 #include "Image.h"
 #include "SwapChain.h"
 #include "SyncObjects.h"
@@ -29,15 +30,13 @@ struct RenderConfig {
 struct UniformBuffers {
     UniformBuffers()
         : mvp(glm::mat4(1.f))
+        , view(glm::mat4(1.f))
         , viewMode(0)
-        , level(0)
-        , displayExtEdge(0)
     {
     }
     glm::mat4 mvp;
+    glm::mat4 view;
     uint32_t viewMode;
-    uint32_t level;
-    uint32_t displayExtEdge;
 };
 
 class Application {
@@ -50,24 +49,28 @@ public:
     void CreateDevice(bool enableValidationLayers);
     void CreateSwapChain();
     void CreateDepthBuffer(uint32_t width, uint32_t height);
-    void CreatePipeline(uint32_t pushConstantSize, bool isWireFrame);
+    void CreateGraphicsPipeline(uint32_t pushConstantSize, bool isWireFrame);
+    void CreateComputePipeline(uint32_t pushConstantSize);
     void CreateDescriptorSetManager();
 
     void CreateCamera();
-    void CreateInstanceBuffers(const std::vector<uint32_t>& packedData);
+    void CreateInstanceBuffers( std::vector<uint32_t>& packedData);
     void CreateFrameContextBuffers();
     void CreateCommandBuffer();
     void RecordCommand();
     void CreateSyncObjects();
-    void Run(const std::vector<uint32_t>& packedData);
+    void Run( std::vector<uint32_t>& packedData);
     void BeginRender(VkCommandBuffer cmd, uint32_t imageId);
     void EndRender(VkCommandBuffer cmd);
-    void PushConstant(VkCommandBuffer cmd, uint32_t size, void* p);
+    void PushConstant(VkCommandBuffer cmd, VkPipelineLayout pipelineLayout, uint32_t size, void* p);
     void BindGraphicsPipeline(VkCommandBuffer cmd);
+    void BindComputePipeline(VkCommandBuffer cmd);
     void BindVertexAndIndicesBuffer(VkCommandBuffer cmd);
-    void BindDescriptorSets(VkCommandBuffer cmd);
+    void BindDescriptorSets(VkCommandBuffer cmd, VkPipelineBindPoint usage, VkPipelineLayout pipelineLayout);
     void SetViewportAndScissor(VkCommandBuffer cmd);
+    void Dispatch(VkCommandBuffer cmd, uint32_t x, uint32_t y, uint32_t z);
     void Draw(VkCommandBuffer cmd);
+    void DrawIndirect(VkCommandBuffer cmd, uint32_t id);
 
     void UpdateUniformBuffers(uint32_t imageId);
     void AcquireNextImage(uint32_t frameId, uint32_t& imageId);
@@ -116,6 +119,7 @@ private:
     Device* _device;
     SwapChain* _swapchain;
     GraphicsPipeline* _graphicsPipeline;
+    ComputePipeline* _computePipeline;
     Image* _depthBuffer;
     DescriptorSetManager* _descriptorSetManager;
     SyncObjects* _syncObjects;
@@ -130,7 +134,13 @@ private:
 
     std::vector<Buffer*> _uniformBuffers;
     std::vector<Buffer*> _packedClusters;
+    std::vector<Buffer*> _indirectBuffers;
+    std::vector<Buffer*> _visibilityClusterBuffers;
 
+    Buffer* _packedBuffer;
+    Buffer* _constContextBuffer;
+
+    uint32_t _clustersNum;
     uint32_t _indicesSize;
 
     Core::Camera* _camera;

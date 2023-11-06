@@ -19,7 +19,7 @@ int main()
     bool isRebuildVirtualMesh = false;
 
     Util::Timer timer;
-    const std::string modelFileName = "../assets/models/sphere2.obj";
+    const std::string modelFileName = "../assets/models/Font_Reconstructed.stl";
     std::string packedfileName = modelFileName.substr(0, modelFileName.find_last_of('.')) + ".txt";
     std::vector<uint32_t> packedData;
 

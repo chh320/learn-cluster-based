@@ -3,8 +3,8 @@
 #extension GL_EXT_nonuniform_qualifier : enable
 
 layout(location = 0) out vec3 color;
-layout(location = 1) out vec3 coord;
-layout(location = 2) out float isExt;
+//layout(location = 1) out vec3 coord;
+//layout(location = 2) out float isExt;
 
 layout(set=0,binding=0) buffer bindlessData{
     uint data[];
@@ -12,35 +12,30 @@ layout(set=0,binding=0) buffer bindlessData{
 
 layout(push_constant) uniform constant{
 	uint swapchainId;
-	uint swapchainImageNum;
 }pushConstants;
 
 struct FrameContext{
 	mat4 mvp;
-    uint viewMode;	// 0:tri 1:cluster 2:group
-    uint level;
-	uint displayExtEdge;
+    mat4 view;
+    uint viewMode;	// 0:triangle 1:cluster 2:group 3:mipLevel 4: phone-model
 };
 
 struct Cluster{
+    uint verticesNum;
+    uint vertOffset;
 	uint triangleNum;
-	uint verticesNum;
+    uint indexOffset;
+
 	uint groupId;
 	uint mipLevel;
-
-	vec4 bounds;
-
-	uint indexOffset;
-	uint posOffset;
-	uint isExternalEdgeOffset;
-
-	uint clusterId;
-	uint bufferId;
-
 };
 
+uint GetImageNum(){
+    return inputData[0].data[0];
+}
+
 FrameContext GetFrameContext(){
-	uint idx = pushConstants.swapchainId;
+	uint idx = pushConstants.swapchainId + 1 + 2 * GetImageNum();
 	FrameContext context;
 	for(int i = 0; i < 4; i++){
 		vec4 p;
@@ -50,47 +45,52 @@ FrameContext GetFrameContext(){
 		p.w = uintBitsToFloat(inputData[idx].data[i * 4 + 3]);
 		context.mvp[i] = p;
 	}
+
+    for(int i = 0; i < 4; i++){
+		vec4 p;
+		p.x = uintBitsToFloat(inputData[idx].data[i * 4 + 16]);
+		p.y = uintBitsToFloat(inputData[idx].data[i * 4 + 1 + 16]);
+		p.z = uintBitsToFloat(inputData[idx].data[i * 4 + 2 + 16]);
+		p.w = uintBitsToFloat(inputData[idx].data[i * 4 + 3 + 16]);
+		context.view[i] = p;
+	}
 	
-	context.viewMode		= inputData[idx].data[16];
-	context.level			= inputData[idx].data[17];
-	context.displayExtEdge	= inputData[idx].data[18];
+	context.viewMode = inputData[idx].data[32];
 	return context;
 }
 
 Cluster GetCluster(uint clusterId){
 	Cluster cluster;
-	uint idx = clusterId + pushConstants.swapchainImageNum;
+	uint idx = 1 + 3 * GetImageNum();
+    uint offset = 4 + 16 * clusterId;
 
-	cluster.triangleNum = inputData[nonuniformEXT(idx)].data[0];
-	cluster.verticesNum = inputData[nonuniformEXT(idx)].data[1];
-	cluster.groupId = inputData[nonuniformEXT(idx)].data[2];
-	cluster.mipLevel = inputData[nonuniformEXT(idx)].data[3];
+	cluster.verticesNum         = inputData[idx].data[offset + 0];
+    cluster.vertOffset          = inputData[idx].data[offset + 1];
+	cluster.triangleNum         = inputData[idx].data[offset + 2];
+    cluster.indexOffset         = inputData[idx].data[offset + 3];
 
-	cluster.bounds.x = uintBitsToFloat(inputData[nonuniformEXT(idx)].data[4]);
-	cluster.bounds.y = uintBitsToFloat(inputData[nonuniformEXT(idx)].data[5]);
-	cluster.bounds.z = uintBitsToFloat(inputData[nonuniformEXT(idx)].data[6]);
-	cluster.bounds.w = uintBitsToFloat(inputData[nonuniformEXT(idx)].data[7]);
-
-	cluster.indexOffset = 8;						// indice data is at offset 8 of each triangle's data in cluster.
-	cluster.posOffset = 8 + cluster.triangleNum;	// There are 8 data before this, and the size of the index offset is the number of triangles
-
-	cluster.clusterId = clusterId;
-	cluster.bufferId = idx;
-	cluster.isExternalEdgeOffset = 8 + cluster.triangleNum + cluster.verticesNum * 3;
+	cluster.groupId             = inputData[idx].data[offset + 14];
+	cluster.mipLevel            = inputData[idx].data[offset + 15];
 
 	return cluster;
 }
 
-vec3 GetPosition(Cluster cluster, uint id){
-	uint triangleId = id / 3;
-	uint triangleData = inputData[nonuniformEXT(cluster.bufferId)].data[cluster.indexOffset + triangleId];
-	uint vertId = ((triangleData >> (id % 3 * 8)) & 255);
+vec3 GetPosition(Cluster cluster, uint index){
+	uint triangleId = index / 3;
+    uint id = 1 + 3 * GetImageNum();
+	uint triangleData = inputData[id].data[cluster.indexOffset + triangleId];
+	uint vertId = ((triangleData >> (index % 3 * 8)) & 255);
 
 	vec3 p;
-	p.x = uintBitsToFloat(inputData[nonuniformEXT(cluster.bufferId)].data[cluster.posOffset + vertId * 3 + 0]);
-	p.y = uintBitsToFloat(inputData[nonuniformEXT(cluster.bufferId)].data[cluster.posOffset + vertId * 3 + 1]);
-	p.z = uintBitsToFloat(inputData[nonuniformEXT(cluster.bufferId)].data[cluster.posOffset + vertId * 3 + 2]);
+	p.x = uintBitsToFloat(inputData[id].data[cluster.vertOffset + vertId * 3 + 0]);
+	p.y = uintBitsToFloat(inputData[id].data[cluster.vertOffset + vertId * 3 + 1]);
+	p.z = uintBitsToFloat(inputData[id].data[cluster.vertOffset + vertId * 3 + 2]);
 	return p;
+}
+
+uint GetVisiableCluster(uint index){
+    uint visilityBufferId = pushConstants.swapchainId + 1 + GetImageNum();
+    return inputData[visilityBufferId].data[index];
 }
 
 // --------------------------------------------
@@ -128,37 +128,44 @@ vec3 Id2Color(uint id){
 // --------------------------------------------
 
 void main(){
-	uint clusterId = gl_InstanceIndex;
+    
+	uint clusterId = GetVisiableCluster(gl_InstanceIndex);
 	uint indexId = gl_VertexIndex;
 	uint triangleId = indexId / 3;
 
 	FrameContext frameContext = GetFrameContext();
 	Cluster cluster = GetCluster(clusterId);
 
-	if(triangleId >= cluster.triangleNum || cluster.mipLevel != frameContext.level){
+	if(triangleId >= cluster.triangleNum ){
 		gl_Position.z = 0 / 0; //discard
 		return;
 	}
 
-	vec3 p;
-	p = GetPosition(cluster, indexId);
+    vec3 p = GetPosition(cluster, indexId);
 
 	if(frameContext.viewMode == 0) color = Id2Color(triangleId);
 	else if(frameContext.viewMode == 1) color = Id2Color(clusterId);
 	else if(frameContext.viewMode == 2) color = Id2Color(cluster.groupId);
+    else if(frameContext.viewMode == 3) color = Id2Color(cluster.mipLevel);
+    else if(frameContext.viewMode == 4){
+        uint id2 = Cycle3(indexId, 1);
+        uint id3 = Cycle3(indexId, 2);
+        vec3 p1 = GetPosition(cluster, id2);
+        vec3 p2 = GetPosition(cluster, id3);
+        vec3 n = normalize(cross(p1 - p, p2 - p));
+        color = dot(n, vec3(1)) * vec3(0.5) + vec3(0.3);
+    }
 
-	isExt = 0;
-	coord = vec3(0);
-	if(frameContext.displayExtEdge != 0){
-		uint isExtEdge = inputData[nonuniformEXT(cluster.bufferId)].data[cluster.isExternalEdgeOffset + indexId];
-		isExtEdge |= inputData[nonuniformEXT(cluster.bufferId)].data[cluster.isExternalEdgeOffset + Cycle3(indexId, 2)];
+	//isExt = 0;
+	//coord = vec3(0);
+	//if(frameContext.displayExtEdge != 0){
+	//	uint isExtEdge = inputData[nonuniformEXT(cluster.bufferId)].data[cluster.isExternalEdgeOffset + indexId];
+	//	isExtEdge |= inputData[nonuniformEXT(cluster.bufferId)].data[cluster.isExternalEdgeOffset + Cycle3(indexId, 2)];
+    //
+	//	isExt = isExtEdge;
+	//	coord[gl_VertexIndex % 3] = 1;
+	//}
 
-		isExt = isExtEdge;
-		coord[gl_VertexIndex % 3] = 1;
-	}
 
-	vec4 worldPos = frameContext.mvp * vec4(p, 1.0f);
-	worldPos = worldPos / worldPos.w;
-	if(worldPos.z < 0 || worldPos.z > 1) worldPos.z = 0 / 0;
-	gl_Position = worldPos;
+	gl_Position = frameContext.mvp * vec4(p, 1.0f);
 }

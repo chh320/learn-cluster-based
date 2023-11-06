@@ -12,7 +12,8 @@ Application::Application(const RenderConfig& config)
     CreateSwapChain();
     CreateDepthBuffer(config.width, config.height);
     CreateDescriptorSetManager();
-    CreatePipeline(8, config.isWireFrame);
+    CreateGraphicsPipeline(4, config.isWireFrame);
+    CreateComputePipeline(4);
     CreateFrameContextBuffers();
 }
 
@@ -22,7 +23,7 @@ Application::~Application()
 }
 
 // void Application::Run(const Core::Mesh& mesh, const Core::VirtualMesh& vmesh)
-void Application::Run(const std::vector<uint32_t>& packedData)
+void Application::Run(std::vector<uint32_t>& packedData)
 {
     CreateCamera();
     CreateCommandBuffer();
@@ -83,46 +84,68 @@ void Application::CreateCamera()
     _camera = new Core::Camera(pos, target, worldUp, fov, aspect, zNear, zFar);
 }
 
-void Application::CreateInstanceBuffers(const std::vector<uint32_t>& packedData)
+void Application::CreateInstanceBuffers(std::vector<uint32_t>& packedData)
 {
-    uint32_t clusterNum = packedData[0];
-    for (auto i = 0; i < clusterNum; i++) {
-        std::vector<uint32_t> bufferData;
-        auto offset = 4 + i * 16;
+    //for (auto i = 0; i < _clustersNum; i++) {
+    //    std::vector<uint32_t> bufferData;
+    //    auto offset = 4 + i * 16;
 
-        auto vertNum = packedData[offset + 0];
-        auto vertOffset = packedData[offset + 1];
-        auto triangleNum = packedData[offset + 2];
-        auto idOffset = packedData[offset + 3];
+    //    auto vertNum = packedData[offset + 0];
+    //    auto vertOffset = packedData[offset + 1];
+    //    auto triangleNum = packedData[offset + 2];
+    //    auto idOffset = packedData[offset + 3];
 
-        bufferData.push_back(triangleNum); // triangle num;
-        bufferData.push_back(vertNum); // vertex num;
-        bufferData.push_back(packedData[offset + 14]); // groupId;
-        bufferData.push_back(packedData[offset + 15]); // mipLevel;
+    //    bufferData.push_back(triangleNum); // triangle num;
+    //    bufferData.push_back(vertNum); // vertex num;
+    //    bufferData.push_back(packedData[offset + 14]); // groupId;
+    //    bufferData.push_back(packedData[offset + 15]); // mipLevel;
 
-        bufferData.push_back(packedData[offset + 4]); // lodBounds.center.x
-        bufferData.push_back(packedData[offset + 5]); // lodBounds.center.y
-        bufferData.push_back(packedData[offset + 6]); // lodBounds.center.z
-        bufferData.push_back(packedData[offset + 7]); // lodBounds.radius
+    //    bufferData.push_back(packedData[offset + 4]); // lodBounds.center.x
+    //    bufferData.push_back(packedData[offset + 5]); // lodBounds.center.y
+    //    bufferData.push_back(packedData[offset + 6]); // lodBounds.center.z
+    //    bufferData.push_back(packedData[offset + 7]); // lodBounds.radius
 
-        for (size_t j = 0; j < triangleNum; j++) {
-            bufferData.push_back(packedData[idOffset + j]); // triangle corners id
-        }
+    //    for (size_t j = 0; j < triangleNum; j++) {
+    //        bufferData.push_back(packedData[idOffset + j]); // triangle corners id
+    //    }
 
-        for (size_t j = 0; j < vertNum; j++) {
-            bufferData.push_back(packedData[vertOffset + j * 3 + 0]); // vert.x
-            bufferData.push_back(packedData[vertOffset + j * 3 + 1]); // vert.y
-            bufferData.push_back(packedData[vertOffset + j * 3 + 2]); // vert.z
-        }
+    //    for (size_t j = 0; j < vertNum; j++) {
+    //        bufferData.push_back(packedData[vertOffset + j * 3 + 0]); // vert.x
+    //        bufferData.push_back(packedData[vertOffset + j * 3 + 1]); // vert.y
+    //        bufferData.push_back(packedData[vertOffset + j * 3 + 2]); // vert.z
+    //    }
 
-        for (auto j = 0; j < triangleNum * 3; j++)
-            bufferData.push_back(0);
+    //    for (auto j = 0; j < triangleNum * 3; j++)
+    //        bufferData.push_back(0);
 
-        _packedClusters.push_back(new Buffer(_device->GetAllocator(), bufferData.size() * sizeof(uint32_t), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU));
-        _packedClusters[_packedClusters.size() - 1]->Update(bufferData.data(), bufferData.size() * sizeof(uint32_t));
-    }
+    //    _packedClusters.push_back(new Buffer(_device->GetAllocator(), bufferData.size() * sizeof(uint32_t), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU));
+    //    _packedClusters[_packedClusters.size() - 1]->Update(bufferData.data(), bufferData.size() * sizeof(uint32_t));
+    //}
 
-    Buffer::UpdateDescriptorSets(_packedClusters, _device->GetDevice(), _descriptorSetManager->GetBindlessBufferSet(), _swapchain->GetImageCount());
+    _clustersNum = packedData[0];
+    int imageCnt = _swapchain->GetImageCount();
+
+    // buffer array [0] : const context
+    _constContextBuffer = new Buffer(_device->GetAllocator(), sizeof(uint32_t), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+    Buffer::UpdateDescriptorSets(std::vector<Buffer*>{_constContextBuffer}, _device->GetDevice(), _descriptorSetManager->GetBindlessBufferSet(), 0);
+    _constContextBuffer->Update(&imageCnt, sizeof(uint32_t));
+
+    // buffer array [1, 1 + swapchain image num) : indirect buffer for indirect draw
+    _indirectBuffers.resize(imageCnt);
+    for (auto& buffer : _indirectBuffers)
+        buffer = new Buffer(_device->GetAllocator(), 4 * sizeof(uint32_t), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+    Buffer::UpdateDescriptorSets(_indirectBuffers, _device->GetDevice(), _descriptorSetManager->GetBindlessBufferSet(), 1);
+
+    // buffer array [1 + swapchain image num, 1 + 2 * swapchain image num) : visibility cluster buffer
+    _visibilityClusterBuffers.resize(imageCnt);
+    for (auto& buffer : _visibilityClusterBuffers)
+        buffer = new Buffer(_device->GetAllocator(), (1 << 20), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_TO_CPU);
+    Buffer::UpdateDescriptorSets(_visibilityClusterBuffers, _device->GetDevice(), _descriptorSetManager->GetBindlessBufferSet(), 1 + imageCnt);
+
+    // buffer array [1 + 3 * swapchain image num, ...) : packed cluster-based mesh data buffer
+    _packedBuffer = new Buffer(_device->GetAllocator(), packedData.size() * sizeof(uint32_t), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+    Buffer::UpdateDescriptorSets(std::vector<Buffer*>{_packedBuffer}, _device->GetDevice(), _descriptorSetManager->GetBindlessBufferSet(), 1 + 3 * imageCnt);
+    _packedBuffer->Update(packedData.data(), packedData.size() * sizeof(uint32_t));
 }
 
 void Application::CreateFrameContextBuffers()
@@ -131,7 +154,8 @@ void Application::CreateFrameContextBuffers()
     for (auto& ubo : _uniformBuffers)
         ubo = new Buffer(_device->GetAllocator(), sizeof(UniformBuffers), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
-    Buffer::UpdateDescriptorSets(_uniformBuffers, _device->GetDevice(), _descriptorSetManager->GetBindlessBufferSet(), 0);
+    // buffer array [1 + 2 * swapchain image num, 1 + 3 * swapchain image num) : uniform buffer for mvp
+    Buffer::UpdateDescriptorSets(_uniformBuffers, _device->GetDevice(), _descriptorSetManager->GetBindlessBufferSet(), 1 + 2 * _swapchain->GetImageCount());
 }
 
 void Application::CreateCommandBuffer()
@@ -148,23 +172,33 @@ void Application::RecordCommand()
     }
     for (auto i = 0; i < _commandBuffers->GetSize(); i++) {
         const auto cmd = _commandBuffers->Begin(i);
+        BindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, _computePipeline->GetPipelineLayout());
+        PushConstant(cmd, _computePipeline->GetPipelineLayout(), 4, &id[i]);
+        {
+            BufferBarrier bufferBarrier(_indirectBuffers[i]->GetBuffer(), _indirectBuffers[i]->GetSize(), 0, 0, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_ACCESS_SHADER_WRITE_BIT);
+            Barrier::PipelineBarrier(cmd, std::vector<ImageBarrier>(), std::vector<BufferBarrier>{ bufferBarrier });
+        }
+        BindComputePipeline(cmd);
+        Dispatch(cmd, _clustersNum / 32 + 1, 1, 1);
         {
             ImageBarrier imageBarrier(_swapchain->GetImage(i),
                 0, 0,
                 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                 VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
                 VK_IMAGE_ASPECT_COLOR_BIT);
-            Barrier::PipelineBarrier(cmd, std::vector<ImageBarrier> { imageBarrier }, std::vector<BufferBarrier>());
+            BufferBarrier bufferBarrier(_indirectBuffers[i]->GetBuffer(), _indirectBuffers[i]->GetSize(), 0, 0, VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, VK_ACCESS_INDIRECT_COMMAND_READ_BIT);
+            Barrier::PipelineBarrier(cmd, std::vector<ImageBarrier> { imageBarrier }, std::vector<BufferBarrier>{ bufferBarrier });
         }
 
         BeginRender(cmd, i);
-        PushConstant(cmd, 8, &id[i]);
+
         BindGraphicsPipeline(cmd);
-        if (!_useInstance)
-            BindVertexAndIndicesBuffer(cmd);
+        //if (!_useInstance)
+        //    BindVertexAndIndicesBuffer(cmd);
         SetViewportAndScissor(cmd);
-        BindDescriptorSets(cmd);
-        Draw(cmd);
+        BindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline->GetPipelineLayout());
+        //Draw(cmd);
+        DrawIndirect(cmd, i);
         EndRender(cmd);
 
         {
@@ -207,9 +241,13 @@ void Application::CreateDescriptorSetManager()
     _descriptorSetManager = new DescriptorSetManager(_device->GetDevice());
 }
 
-void Application::CreatePipeline(uint32_t pushConstantSize, bool isWireFrame)
+void Application::CreateGraphicsPipeline(uint32_t pushConstantSize, bool isWireFrame)
 {
     _graphicsPipeline = new GraphicsPipeline(*_device, *_swapchain, *_descriptorSetManager, pushConstantSize, _useInstance, isWireFrame);
+}
+
+void Application::CreateComputePipeline(uint32_t pushConstantSize) {
+    _computePipeline = new ComputePipeline(*_device, *_descriptorSetManager, pushConstantSize);
 }
 
 void Application::BeginRender(VkCommandBuffer cmd, uint32_t imageId)
@@ -256,14 +294,18 @@ void Application::EndRender(VkCommandBuffer cmd)
     vkCmdEndRendering(cmd);
 }
 
-void Application::PushConstant(VkCommandBuffer cmd, uint32_t size, void* p)
+void Application::PushConstant(VkCommandBuffer cmd, VkPipelineLayout pipelineLayout, uint32_t size, void* p)
 {
-    vkCmdPushConstants(cmd, _graphicsPipeline->GetPipelineLayout(), VK_SHADER_STAGE_ALL_GRAPHICS | VK_SHADER_STAGE_COMPUTE_BIT, 0, size, p);
+    vkCmdPushConstants(cmd, pipelineLayout, VK_SHADER_STAGE_ALL_GRAPHICS | VK_SHADER_STAGE_COMPUTE_BIT, 0, size, p);
 }
 
 void Application::BindGraphicsPipeline(VkCommandBuffer cmd)
 {
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline->GetPipeline());
+}
+
+void Application::BindComputePipeline(VkCommandBuffer cmd) {
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, _computePipeline->GetPipeline());
 }
 
 void Application::BindVertexAndIndicesBuffer(VkCommandBuffer cmd)
@@ -275,10 +317,10 @@ void Application::BindVertexAndIndicesBuffer(VkCommandBuffer cmd)
     vkCmdBindIndexBuffer(cmd, _indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 }
 
-void Application::BindDescriptorSets(VkCommandBuffer cmd)
+void Application::BindDescriptorSets(VkCommandBuffer cmd, VkPipelineBindPoint usage, VkPipelineLayout pipelineLayout)
 {
     auto& bufferSet = _descriptorSetManager->GetBindlessBufferSet();
-    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline->GetPipelineLayout(), 0, 1, &bufferSet, 0, nullptr);
+    vkCmdBindDescriptorSets(cmd, usage, pipelineLayout, 0, 1, &bufferSet, 0, nullptr);
 }
 
 void Application::SetViewportAndScissor(VkCommandBuffer cmd)
@@ -298,6 +340,10 @@ void Application::SetViewportAndScissor(VkCommandBuffer cmd)
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 }
 
+void Application::Dispatch(VkCommandBuffer cmd, uint32_t x, uint32_t y, uint32_t z) {
+    vkCmdDispatch(cmd, x, y, z);
+}
+
 void Application::Draw(VkCommandBuffer cmd)
 {
     if (_useInstance) {
@@ -305,6 +351,10 @@ void Application::Draw(VkCommandBuffer cmd)
     } else {
         vkCmdDrawIndexed(cmd, _indicesSize, 1, 0, 0, 0);
     }
+}
+
+void Application::DrawIndirect(VkCommandBuffer cmd, uint32_t id) {
+    vkCmdDrawIndirect(cmd, _indirectBuffers[id]->GetBuffer(), 0, 1, 4 * sizeof(uint32_t));
 }
 
 void Application::CreateSyncObjects()
@@ -319,6 +369,7 @@ void Application::UpdateUniformBuffers(uint32_t imageId)
     glm::mat4 proj = _camera->getProjMatrix();
 
     _ubo.mvp = proj * view * model;
+    _ubo.view = view * model;
 
     if (GetMouseLeftDown()) {
         _camera->rotateByScreenX(_camera->getTarget(), GetMouseHorizontalMove() * 0.015);
@@ -485,12 +536,19 @@ void Application::CleanUp()
     CleanUp(_depthBuffer);
     for (auto& ubo : _uniformBuffers)
         CleanUp(ubo);
-    for (auto& buffer : _packedClusters)
+    for (auto& buffer : _indirectBuffers)
         CleanUp(buffer);
+    for (auto& buffer : _visibilityClusterBuffers)
+        CleanUp(buffer);
+    CleanUp(_packedBuffer);
+    CleanUp(_constContextBuffer);
+   /* for (auto& buffer : _packedClusters)
+        CleanUp(buffer);*/
     CleanUp(_descriptorSetManager);
     if (!_useInstance)
         CleanBuffer(_device->GetDevice());
     CleanUp(_graphicsPipeline);
+    CleanUp(_computePipeline);
     CleanUp(_syncObjects);
     CleanUp(_commandPool);
     CleanUp(_commandBuffers);
@@ -540,13 +598,10 @@ void Application::OnKey(int key, int scancode, int action, int mods)
             _window->Close();
             break;
         case GLFW_KEY_J:
-            _ubo.viewMode = (_ubo.viewMode + 3 - 1) % 3;
+            _ubo.viewMode = (_ubo.viewMode + 5 - 1) % 5;
             break;
         case GLFW_KEY_K:
-            _ubo.viewMode = (_ubo.viewMode + 1) % 3;
-            break;
-        case GLFW_KEY_L:
-            _ubo.displayExtEdge ^= 1;
+            _ubo.viewMode = (_ubo.viewMode + 1) % 5;
             break;
         default:
             break;

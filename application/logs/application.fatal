@@ -120,3 +120,47 @@ D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl (288): __scr
 00007FFEDCD9257D (KERNEL32): (filename not available): BaseThreadInitThunk
 00007FFEDDCEAA78 (ntdll): (filename not available): RtlUserThreadStart
 
+F1103 15:46:58.526] SIGABRT: aborted
+minkernel\crts\ucrt\src\appcrt\startup\abort.cpp (71): abort
+minkernel\crts\ucrt\src\appcrt\startup\assert.cpp (175): common_assert_to_stderr<wchar_t>
+minkernel\crts\ucrt\src\appcrt\startup\assert.cpp (443): _wassert
+E:\Soft_ware\Vulkan1.3.216.0\include\vma\vk_mem_alloc.h (11761): VmaDeviceMemoryBlock::Destroy
+E:\Soft_ware\Vulkan1.3.216.0\include\vma\vk_mem_alloc.h (12300): VmaBlockVector::~VmaBlockVector
+00007FF7A0A826F7 (application): (filename not available): VmaBlockVector::`scalar deleting destructor'
+E:\Soft_ware\Vulkan1.3.216.0\include\vma\vk_mem_alloc.h (11690): vma_delete<VmaBlockVector>
+E:\Soft_ware\Vulkan1.3.216.0\include\vma\vk_mem_alloc.h (14154): VmaAllocator_T::~VmaAllocator_T
+00007FF7A0A825B7 (application): (filename not available): VmaAllocator_T::`scalar deleting destructor'
+E:\Soft_ware\Vulkan1.3.216.0\include\vma\vk_mem_alloc.h (3763): vma_delete<VmaAllocator_T>
+E:\Soft_ware\Vulkan1.3.216.0\include\vma\vk_mem_alloc.h (16020): vmaDestroyAllocator
+E:\Study\Vulkan_work\vk-nanite\vk\Device.cpp (13): Vk::Device::~Device
+00007FF7A0A42427 (application): (filename not available): Vk::Device::`scalar deleting destructor'
+E:\Study\Vulkan_work\vk-nanite\application\Application.h (110): Vk::Application::CleanUp<Vk::Device>
+E:\Study\Vulkan_work\vk-nanite\application\Application.cpp (545): Vk::Application::CleanUp
+E:\Study\Vulkan_work\vk-nanite\application\Application.cpp (23): Vk::Application::~Application
+E:\Study\Vulkan_work\vk-nanite\application\main.cpp (65): main
+D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl (288): __scrt_common_main_seh
+00007FF89A0F257D (KERNEL32): (filename not available): BaseThreadInitThunk
+00007FF89BCCAA78 (ntdll): (filename not available): RtlUserThreadStart
+
+F1103 15:47:10.843] SIGABRT: aborted
+minkernel\crts\ucrt\src\appcrt\startup\abort.cpp (71): abort
+minkernel\crts\ucrt\src\appcrt\startup\assert.cpp (175): common_assert_to_stderr<wchar_t>
+minkernel\crts\ucrt\src\appcrt\startup\assert.cpp (443): _wassert
+E:\Soft_ware\Vulkan1.3.216.0\include\vma\vk_mem_alloc.h (11761): VmaDeviceMemoryBlock::Destroy
+E:\Soft_ware\Vulkan1.3.216.0\include\vma\vk_mem_alloc.h (12300): VmaBlockVector::~VmaBlockVector
+00007FF7544126F7 (application): (filename not available): VmaBlockVector::`scalar deleting destructor'
+E:\Soft_ware\Vulkan1.3.216.0\include\vma\vk_mem_alloc.h (11690): vma_delete<VmaBlockVector>
+E:\Soft_ware\Vulkan1.3.216.0\include\vma\vk_mem_alloc.h (14154): VmaAllocator_T::~VmaAllocator_T
+00007FF7544125B7 (application): (filename not available): VmaAllocator_T::`scalar deleting destructor'
+E:\Soft_ware\Vulkan1.3.216.0\include\vma\vk_mem_alloc.h (3763): vma_delete<VmaAllocator_T>
+E:\Soft_ware\Vulkan1.3.216.0\include\vma\vk_mem_alloc.h (16020): vmaDestroyAllocator
+E:\Study\Vulkan_work\vk-nanite\vk\Device.cpp (13): Vk::Device::~Device
+00007FF7543D2427 (application): (filename not available): Vk::Device::`scalar deleting destructor'
+E:\Study\Vulkan_work\vk-nanite\application\Application.h (110): Vk::Application::CleanUp<Vk::Device>
+E:\Study\Vulkan_work\vk-nanite\application\Application.cpp (545): Vk::Application::CleanUp
+E:\Study\Vulkan_work\vk-nanite\application\Application.cpp (23): Vk::Application::~Application
+E:\Study\Vulkan_work\vk-nanite\application\main.cpp (65): main
+D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl (288): __scrt_common_main_seh
+00007FF89A0F257D (KERNEL32): (filename not available): BaseThreadInitThunk
+00007FF89BCCAA78 (ntdll): (filename not available): RtlUserThreadStart
+
