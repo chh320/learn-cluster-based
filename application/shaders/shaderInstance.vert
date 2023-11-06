@@ -3,6 +3,9 @@
 #extension GL_EXT_nonuniform_qualifier : enable
 
 layout(location = 0) out vec3 color;
+layout(location = 1) out vec3 normal;
+layout(location = 2) out float isPhoneModel;
+
 //layout(location = 1) out vec3 coord;
 //layout(location = 2) out float isExt;
 
@@ -142,18 +145,20 @@ void main(){
 	}
 
     vec3 p = GetPosition(cluster, indexId);
+    uint id2 = Cycle3(indexId, 1);
+    uint id3 = Cycle3(indexId, 2);
+    vec3 p1 = GetPosition(cluster, id2);
+    vec3 p2 = GetPosition(cluster, id3);
+    normal = normalize(cross(p1 - p, p2 - p));
 
+    isPhoneModel = 0;
+    color = vec3(1.0);
 	if(frameContext.viewMode == 0) color = Id2Color(triangleId);
 	else if(frameContext.viewMode == 1) color = Id2Color(clusterId);
 	else if(frameContext.viewMode == 2) color = Id2Color(cluster.groupId);
     else if(frameContext.viewMode == 3) color = Id2Color(cluster.mipLevel);
     else if(frameContext.viewMode == 4){
-        uint id2 = Cycle3(indexId, 1);
-        uint id3 = Cycle3(indexId, 2);
-        vec3 p1 = GetPosition(cluster, id2);
-        vec3 p2 = GetPosition(cluster, id3);
-        vec3 n = normalize(cross(p1 - p, p2 - p));
-        color = dot(n, vec3(1)) * vec3(0.5) + vec3(0.3);
+        isPhoneModel = 1;
     }
 
 	//isExt = 0;
@@ -165,7 +170,6 @@ void main(){
 	//	isExt = isExtEdge;
 	//	coord[gl_VertexIndex % 3] = 1;
 	//}
-
 
 	gl_Position = frameContext.mvp * vec4(p, 1.0f);
 }

@@ -5,7 +5,6 @@
 #include "Quadric.h"
 #include "Util.h"
 
-
 #include <algorithm>
 #include <assert.h>
 #include <vector>
@@ -139,10 +138,14 @@ void MeshSimplifierImpl::Simplify(uint32_t targetTriangleNum)
     triQuadrics.resize(triangleNum);
     for (auto i = 0; i < triangleNum; i++)
         FixupTriangle(i);
+    if (remainingTriangleNum <= targetTriangleNum) {
+        Compact();
+        return;
+    }
     heap.Resize(edges.size());
     uint32_t i = 0;
     for (auto& edge : edges) {
-        float error = Evaluate(edge.first, edge.second, false);
+        float error = Evaluate(edge.second, edge.first, false);
         heap.Add(error, i);
         i++;
     }
@@ -298,8 +301,10 @@ float MeshSimplifierImpl::Evaluate(const glm::vec3& v0, const glm::vec3& v1, boo
     else if (!q.Get(v))
         v = (v0 + v1) * 0.5f;
 
-    if (!isValidVertex(v))
+    if (!isValidVertex(v)) {
         v = (v0 + v1) * 0.5f;
+    }
+
     error += q.Evaluate(v);
 
     if (merge) {

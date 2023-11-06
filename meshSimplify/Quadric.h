@@ -28,13 +28,13 @@ namespace Core {
 		}
 
 		bool Get(glm::vec3& p) {
-			glm::mat4 m = {
+			glm::dmat4 m = {
 				{a2, ab, ac, 0},
 				{ab, b2, bc, 0},
 				{ac, bc, c2, 0},
 				{ad, bd, cd, 1}
 			};
-			glm::mat4 inv = glm::inverse(m);
+			glm::dmat4 inv = glm::inverse(m);
 			glm::dvec4 v = inv[3];
 			p = glm::vec3(v);
 			return true;

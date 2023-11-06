@@ -31,7 +31,7 @@ namespace Core {
 			//std::vector<uint32_t>().swap(indices);
 			for (unsigned int i = 0; i < indiceCnt; i += 3) {
 				for (int j = 0; j < 3; j++) {
-					indices[j] = mesh->mFaces[i / 3].mIndices[j];
+					indices[i + j] = mesh->mFaces[i / 3].mIndices[j];
 					//indices.emplace_back(mesh->mFaces[i / 3].mIndices[j]);
 				}
 			}
