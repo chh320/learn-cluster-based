@@ -5,15 +5,16 @@
 
 namespace Vk {
 Application::Application(const RenderConfig& config)
-    : _useInstance(config.useInstance)
+    : _instanceXYZ(config.instanceXYZ)
+    , _maxMipSize(config.maxMipSize)
+    , _useInstance(config.useInstance)
 {
     InitWindow(config.width, config.height);
     CreateDevice(enableValidationLayers);
     CreateSwapChain();
-    CreateDepthBuffer(config.width, config.height);
     CreateDescriptorSetManager();
-    CreateGraphicsPipeline(4, config.isWireFrame);
-    CreateComputePipeline(4);
+    CreateGraphicsPipeline(8, config.isWireFrame);
+    CreateComputePipeline(28);
     CreateFrameContextBuffers();
 }
 
@@ -35,6 +36,10 @@ void Application::Run(std::vector<uint32_t>& packedData)
     //     CreateVertexBuffer(_device->GetDevice(), mesh.vertices);
     //     CreateIndexBuffer(_device->GetDevice(), mesh.indices);
     // }
+    CreateDepthBuffer(_window->GetWidth(), _window->GetHeight());
+    CreateHizDepthImage();
+    CreateImageSampler();
+    BindImageDescriptorSets();
 
     CreateSyncObjects();
 
@@ -56,6 +61,7 @@ void Application::DrawFrame()
         AcquireNextImage(frameId, imageId);
         ResetFence(frameId);
         UpdateUniformBuffers(imageId);
+        InitIndirectBuffer(imageId);
         QueueSubmit(frameId, imageId);
 
         frameId = (frameId + 1) % 3;
@@ -74,55 +80,26 @@ void Application::SetEvents()
 
 void Application::CreateCamera()
 {
-    glm::vec3 pos = glm::vec3(0.f, 0.f, 5.f);
-    glm::vec3 target = glm::vec3(0.f);
-    glm::vec3 worldUp = glm::vec3(0.f, 1.f, 0.f);
-    float fov = 45.f;
-    float aspect = (float)_swapchain->GetExtent().width / _swapchain->GetExtent().height;
-    float zNear = 0.1f;
-    float zFar = 100.f;
+    glm::vec3 pos       = glm::vec3(0.f, 0.f, 3.f);
+    glm::vec3 target    = glm::vec3(0.f);
+    glm::vec3 worldUp   = glm::vec3(0.f, 1.f, 0.f);
+    float fov           = 60.f;
+    float aspect        = (float)_swapchain->GetExtent().width / _swapchain->GetExtent().height;
+    float zNear         = 0.1f;
+    float zFar          = 100.f;
     _camera = new Core::Camera(pos, target, worldUp, fov, aspect, zNear, zFar);
+
+    pos     = glm::vec3(_instanceXYZ.x * 0.5 * 5, _instanceXYZ.z * 2 * 5, _instanceXYZ.y * 0.5 * 5);
+    target  = glm::vec3(_instanceXYZ.x * 0.5 * 5,                    0.f, _instanceXYZ.y * 0.5 * 5);
+    worldUp = glm::vec3(0.f, 0.f, -1.f);
+    fov     = 90.f;
+    _camera2 = new Core::Camera(pos, target, worldUp, fov, aspect, zNear, zFar);
 }
 
 void Application::CreateInstanceBuffers(std::vector<uint32_t>& packedData)
 {
-    //for (auto i = 0; i < _clustersNum; i++) {
-    //    std::vector<uint32_t> bufferData;
-    //    auto offset = 4 + i * 16;
-
-    //    auto vertNum = packedData[offset + 0];
-    //    auto vertOffset = packedData[offset + 1];
-    //    auto triangleNum = packedData[offset + 2];
-    //    auto idOffset = packedData[offset + 3];
-
-    //    bufferData.push_back(triangleNum); // triangle num;
-    //    bufferData.push_back(vertNum); // vertex num;
-    //    bufferData.push_back(packedData[offset + 14]); // groupId;
-    //    bufferData.push_back(packedData[offset + 15]); // mipLevel;
-
-    //    bufferData.push_back(packedData[offset + 4]); // lodBounds.center.x
-    //    bufferData.push_back(packedData[offset + 5]); // lodBounds.center.y
-    //    bufferData.push_back(packedData[offset + 6]); // lodBounds.center.z
-    //    bufferData.push_back(packedData[offset + 7]); // lodBounds.radius
-
-    //    for (size_t j = 0; j < triangleNum; j++) {
-    //        bufferData.push_back(packedData[idOffset + j]); // triangle corners id
-    //    }
-
-    //    for (size_t j = 0; j < vertNum; j++) {
-    //        bufferData.push_back(packedData[vertOffset + j * 3 + 0]); // vert.x
-    //        bufferData.push_back(packedData[vertOffset + j * 3 + 1]); // vert.y
-    //        bufferData.push_back(packedData[vertOffset + j * 3 + 2]); // vert.z
-    //    }
-
-    //    for (auto j = 0; j < triangleNum * 3; j++)
-    //        bufferData.push_back(0);
-
-    //    _packedClusters.push_back(new Buffer(_device->GetAllocator(), bufferData.size() * sizeof(uint32_t), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU));
-    //    _packedClusters[_packedClusters.size() - 1]->Update(bufferData.data(), bufferData.size() * sizeof(uint32_t));
-    //}
-
     _clustersNum = packedData[0];
+    _groupsNum = packedData[1];
     int imageCnt = _swapchain->GetImageCount();
 
     // buffer array [0] : const context
@@ -139,13 +116,24 @@ void Application::CreateInstanceBuffers(std::vector<uint32_t>& packedData)
     // buffer array [1 + swapchain image num, 1 + 2 * swapchain image num) : visibility cluster buffer
     _visibilityClusterBuffers.resize(imageCnt);
     for (auto& buffer : _visibilityClusterBuffers)
-        buffer = new Buffer(_device->GetAllocator(), (1 << 20), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_TO_CPU);
+        buffer = new Buffer(_device->GetAllocator(), (1 << 22), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_GPU_TO_CPU);
     Buffer::UpdateDescriptorSets(_visibilityClusterBuffers, _device->GetDevice(), _descriptorSetManager->GetBindlessBufferSet(), 1 + imageCnt);
 
-    // buffer array [1 + 3 * swapchain image num, ...) : packed cluster-based mesh data buffer
+    // buffer array [1 + 3 * swapchain image num] : packed cluster-based mesh data buffer
     _packedBuffer = new Buffer(_device->GetAllocator(), packedData.size() * sizeof(uint32_t), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
     Buffer::UpdateDescriptorSets(std::vector<Buffer*>{_packedBuffer}, _device->GetDevice(), _descriptorSetManager->GetBindlessBufferSet(), 1 + 3 * imageCnt);
     _packedBuffer->Update(packedData.data(), packedData.size() * sizeof(uint32_t));
+
+    // buffer array [2 + 3 * swapchain image num] : instance offset buffer
+    _instanceNum = _instanceXYZ.x * _instanceXYZ.y * _instanceXYZ.z;
+    std::vector<glm::vec3> instanceOffset;
+    for (int i = 0; i < _instanceXYZ.x; i++)
+        for (int j = 0; j < _instanceXYZ.y; j++) 
+            for (int k = 0; k < _instanceXYZ.z; k++) 
+                instanceOffset.emplace_back(i * 5.f, k * 5.f, j * 5.f);
+    _instanceOffsetBuffer = new Buffer(_device->GetAllocator(), instanceOffset.size() * sizeof(glm::vec3), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
+    Buffer::UpdateDescriptorSets(std::vector<Buffer*>{_instanceOffsetBuffer}, _device->GetDevice(), _descriptorSetManager->GetBindlessBufferSet(), 2 + 3 * imageCnt);
+    _instanceOffsetBuffer->Update(instanceOffset.data(), instanceOffset.size() * sizeof(glm::vec3));
 }
 
 void Application::CreateFrameContextBuffers()
@@ -166,37 +154,54 @@ void Application::CreateCommandBuffer()
 
 void Application::RecordCommand()
 {
-    std::vector<std::pair<uint32_t, uint32_t>> id(_swapchain->GetImageCount());
-    for (uint32_t i = 0; i < _swapchain->GetImageCount(); i++) {
-        id[i] = { i, _swapchain->GetImageCount() };
-    }
+    std::vector<uint32_t> pushConstants;
+    pushConstants.push_back(0);                                         // swapchain image id
+    pushConstants.push_back(Util::Float2Uint(_camera->getNear()));      // near plane
+    pushConstants.push_back(Util::Float2Uint(_camera->getFar()));       // far plane
+    pushConstants.push_back(_instanceNum);                              // instance num
+    pushConstants.push_back(_window->GetWidth());                       // width
+    pushConstants.push_back(_window->GetHeight());                      // height
+    pushConstants.push_back(_maxMipSize);                               // max mip size
+
+    std::vector<uint32_t> graphicsPushConstants(2);
+
     for (auto i = 0; i < _commandBuffers->GetSize(); i++) {
         const auto cmd = _commandBuffers->Begin(i);
-        BindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, _computePipeline->GetPipelineLayout());
-        PushConstant(cmd, _computePipeline->GetPipelineLayout(), 4, &id[i]);
+        pushConstants[0] = i;
+        BindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, _computePipeline->GetPipelineLayout(), 0, _descriptorSetManager->GetBindlessBufferSet());
+        BindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, _computePipeline->GetPipelineLayout(), 1, _descriptorSetManager->GetBindlessImageSet());
+        PushConstant(cmd, _computePipeline->GetPipelineLayout(), 28, pushConstants.data());
         {
             BufferBarrier bufferBarrier(_indirectBuffers[i]->GetBuffer(), _indirectBuffers[i]->GetSize(), 0, 0, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_ACCESS_SHADER_WRITE_BIT);
             Barrier::PipelineBarrier(cmd, std::vector<ImageBarrier>(), std::vector<BufferBarrier>{ bufferBarrier });
         }
         BindComputePipeline(cmd);
-        Dispatch(cmd, _clustersNum / 32 + 1, 1, 1);
+        Dispatch(cmd, _groupsNum * _instanceNum / 32 + 1, 1, 1);
         {
             ImageBarrier imageBarrier(_swapchain->GetImage(i),
                 0, 0,
                 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                 VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
                 VK_IMAGE_ASPECT_COLOR_BIT);
+
+            ImageBarrier depthImageBarrier(_depthBuffer->GetImage(),
+                0, 0,
+                VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+                VK_IMAGE_ASPECT_DEPTH_BIT);
             BufferBarrier bufferBarrier(_indirectBuffers[i]->GetBuffer(), _indirectBuffers[i]->GetSize(), 0, 0, VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, VK_ACCESS_INDIRECT_COMMAND_READ_BIT);
-            Barrier::PipelineBarrier(cmd, std::vector<ImageBarrier> { imageBarrier }, std::vector<BufferBarrier>{ bufferBarrier });
+            Barrier::PipelineBarrier(cmd, std::vector<ImageBarrier> { imageBarrier, depthImageBarrier }, std::vector<BufferBarrier>{ bufferBarrier });
         }
 
-        BeginRender(cmd, i);
-
-        BindGraphicsPipeline(cmd);
+        graphicsPushConstants[0] = i;
+        graphicsPushConstants[1] = 0;
+        BeginRender(cmd, { _swapchain->GetImageView(i), _depthBuffer->GetImageView(), {_swapchain->GetExtent().width, _swapchain->GetExtent().height } });
+        BindGraphicsPipeline(cmd, _graphicsPipeline->GetPipeline());
         //if (!_useInstance)
         //    BindVertexAndIndicesBuffer(cmd);
-        SetViewportAndScissor(cmd);
-        BindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline->GetPipelineLayout());
+        SetViewportAndScissor(cmd, _swapchain->GetExtent());
+        PushConstant(cmd, _graphicsPipeline->GetPipelineLayout(), 8, graphicsPushConstants.data());
+        BindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline->GetPipelineLayout(), 0, _descriptorSetManager->GetBindlessBufferSet());
         //Draw(cmd);
         DrawIndirect(cmd, i);
         EndRender(cmd);
@@ -204,11 +209,110 @@ void Application::RecordCommand()
         {
             ImageBarrier imageBarrier(_swapchain->GetImage(i),
                 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-                0, 0,
-                VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
+                VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 VK_IMAGE_ASPECT_COLOR_BIT);
-            Barrier::PipelineBarrier(cmd, std::vector<ImageBarrier> { imageBarrier }, std::vector<BufferBarrier>());
+            ImageBarrier depthImageBarrier(_depthBuffer->GetImage(),
+                VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT,
+                VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                VK_IMAGE_ASPECT_DEPTH_BIT);
+            Barrier::PipelineBarrier(cmd, std::vector<ImageBarrier> { imageBarrier, depthImageBarrier}, std::vector<BufferBarrier>());
         }
+
+
+        // hiz part ---------------------------------------------
+        std::vector<uint32_t> hizPushConstants(4);
+        hizPushConstants[0] = _window->GetWidth();
+        hizPushConstants[1] = _window->GetHeight();
+        hizPushConstants[2] = _maxMipSize;
+
+        BindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _hizGraphicsPipeline->GetPipelineLayout(), 1, _descriptorSetManager->GetBindlessImageSet());
+        for (uint32_t level = 0, mipSize = _maxMipSize; level < _hizMipLevels; level++, mipSize >>= 1) {
+            {
+                ImageBarrier imageBarrier(_hizImage->GetImage(),
+                    0, 0,
+                    VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                    VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+                    VK_IMAGE_ASPECT_DEPTH_BIT,
+                    level);
+                Barrier::PipelineBarrier(cmd, std::vector<ImageBarrier> { imageBarrier }, std::vector<BufferBarrier>());
+            }
+
+            hizPushConstants[3] = level;
+            PushConstant(cmd, _computePipeline->GetPipelineLayout(), hizPushConstants.size() * sizeof(uint32_t), hizPushConstants.data());
+            BeginRender(cmd, { _tmpImage->GetImageView(), _hizImage->GetImageView(level), {mipSize, mipSize } });
+            BindGraphicsPipeline(cmd, _hizGraphicsPipeline->GetPipeline());
+            SetViewportAndScissor(cmd, {mipSize, mipSize});
+            vkCmdDraw(cmd, 6, 1, 0, 0);
+            EndRender(cmd);
+
+            {
+                ImageBarrier imageBarrier(_hizImage->GetImage(),
+                    VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT,
+                    VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                    VK_IMAGE_ASPECT_DEPTH_BIT,
+                    level);
+                Barrier::PipelineBarrier(cmd, std::vector<ImageBarrier> { imageBarrier }, std::vector<BufferBarrier>());
+            }
+        }
+        /*{
+            ImageBarrier imageBarrier(_hizImage->GetImage(),
+                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT,
+                0, 0,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_UNDEFINED,
+                VK_IMAGE_ASPECT_DEPTH_BIT
+                );
+            Barrier::PipelineBarrier(cmd, std::vector<ImageBarrier> { imageBarrier }, std::vector<BufferBarrier>());
+        }*/
+
+        // second camera ------------------------------------------
+        {
+            ImageBarrier imageBarrier(_tmpImage->GetImage(),
+                0, 0,
+                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+                VK_IMAGE_ASPECT_COLOR_BIT);
+
+            ImageBarrier depthImageBarrier(_depthBuffer->GetImage(),
+                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_ACCESS_SHADER_READ_BIT,
+                VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+                VK_IMAGE_ASPECT_DEPTH_BIT);
+            Barrier::PipelineBarrier(cmd, std::vector<ImageBarrier> { imageBarrier, depthImageBarrier }, std::vector<BufferBarrier>{ });
+        }
+
+        graphicsPushConstants[1] = 1;
+        BeginRender(cmd, { _tmpImage->GetImageView(), _depthBuffer->GetImageView(), {_swapchain->GetExtent().width, _swapchain->GetExtent().height } });
+        BindGraphicsPipeline(cmd, _graphicsPipeline->GetPipeline());
+        SetViewportAndScissor(cmd, _swapchain->GetExtent());
+        PushConstant(cmd, _graphicsPipeline->GetPipelineLayout(), 8, graphicsPushConstants.data());
+        BindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline->GetPipelineLayout(), 0, _descriptorSetManager->GetBindlessBufferSet());
+        DrawIndirect(cmd, i);
+        EndRender(cmd);
+        {
+            ImageBarrier imageBarrier(_tmpImage->GetImage(),
+                VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                VK_PIPELINE_STAGE_TRANSFER_BIT , VK_ACCESS_TRANSFER_READ_BIT,
+                VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                VK_IMAGE_ASPECT_COLOR_BIT);
+
+            Barrier::PipelineBarrier(cmd, std::vector<ImageBarrier> { imageBarrier }, std::vector<BufferBarrier>{ });
+        }
+        BlitImage(cmd, _tmpImage->GetImage(), _swapchain->GetImage(i),
+            glm::ivec4(0, 0, _swapchain->GetExtent().width, _swapchain->GetExtent().height), 
+            glm::ivec4(0, 0, _swapchain->GetExtent().width / 4, _swapchain->GetExtent().height / 4));
+
+        {
+            ImageBarrier imageBarrier(_swapchain->GetImage(i),
+                VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_WRITE_BIT,
+                0, 0,
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                VK_IMAGE_ASPECT_COLOR_BIT);
+            Barrier::PipelineBarrier(cmd, std::vector<ImageBarrier> { imageBarrier}, std::vector<BufferBarrier>());
+        }
+
         _commandBuffers->End(i);
     }
 }
@@ -233,7 +337,49 @@ void Application::CreateSwapChain()
 
 void Application::CreateDepthBuffer(uint32_t width, uint32_t height)
 {
-    _depthBuffer = new Image(*_device, width, height, VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
+    _depthBuffer = new Image(*_device, width, height, 1, VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
+    _tmpImage = new Image(*_device, width, height, 1, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+}
+
+void Application::CreateHizDepthImage() {
+    _hizMipLevels = Util::CalHighBit(_maxMipSize) + 1;
+    _hizImage = new Image(*_device, _maxMipSize, _maxMipSize, _hizMipLevels, VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
+}
+
+void Application::CreateImageSampler() {
+    _depthSampler = new ImageSampler(_device->GetDevice(), VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER, true);
+    _hizSampler = new ImageSampler(_device->GetDevice(), VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER, false);
+}
+
+void Application::BindImageDescriptorSets() {
+    std::vector<std::pair<VkImageView, VkSampler>> depthImageSample;
+    depthImageSample.emplace_back(_depthBuffer->GetImageView(), _depthSampler->GetSampler());
+    for (auto i = 0; i < _hizMipLevels; i++) {
+        depthImageSample.emplace_back(_hizImage->GetImageView(i), _depthSampler->GetSampler());
+    }
+    Image::UpdateDescriptorSets(depthImageSample, _device->GetDevice(), _descriptorSetManager->GetBindlessImageSet(), 0);
+
+    // todo : make a function to create image view.
+    _hizImage->CreateImageView(_device->GetDevice(), VK_FORMAT_D32_SFLOAT, 0, VK_IMAGE_ASPECT_DEPTH_BIT, _hizMipLevels, _hizImage->GetImage(), _hizImageView);
+    /*VkImageViewCreateInfo createInfo = {};
+    createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    createInfo.image = _hizImage->GetImage();
+    createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    createInfo.format = VK_FORMAT_D32_SFLOAT;
+    createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+    createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+    createInfo.subresourceRange.baseMipLevel = 0;
+    createInfo.subresourceRange.levelCount = _hizMipLevels;
+    createInfo.subresourceRange.layerCount = 1;
+
+    Check(vkCreateImageView(_device->GetDevice(), &createInfo, nullptr, &_hizImageView),
+        "create image view");*/
+
+    std::pair<VkImageView, VkSampler> hizImageSample = { _hizImageView, _hizSampler->GetSampler() };
+    Image::UpdateDescriptorSets(std::vector<std::pair<VkImageView, VkSampler>>{ hizImageSample }, _device->GetDevice(), _descriptorSetManager->GetBindlessImageSet(), depthImageSample.size());
 }
 
 void Application::CreateDescriptorSetManager()
@@ -243,42 +389,63 @@ void Application::CreateDescriptorSetManager()
 
 void Application::CreateGraphicsPipeline(uint32_t pushConstantSize, bool isWireFrame)
 {
-    _graphicsPipeline = new GraphicsPipeline(*_device, *_swapchain, *_descriptorSetManager, pushConstantSize, _useInstance, isWireFrame);
+    {
+        RenderInfo info{};
+        info.viewWidth = _swapchain->GetExtent().width;
+        info.viewHeight = _swapchain->GetExtent().height;
+        info.useInstance = true;
+        info.shaderName = { "shaders/shaderInstance.vert", "shaders/shader.frag" };
+        info.compareOp = VK_COMPARE_OP_GREATER;
+        info.pushConstantSize = pushConstantSize;
+        info.colorAttachmentFormats = std::vector<VkFormat>{ _swapchain->GetImageFormat() };
+        info.depthAttachmentFormat = VK_FORMAT_D32_SFLOAT;
+        _graphicsPipeline = new GraphicsPipeline(*_device, *_descriptorSetManager, info, isWireFrame);
+    }
+    {
+        RenderInfo info{};
+        info.viewWidth = _maxMipSize;
+        info.viewHeight = _maxMipSize;
+        info.useInstance = true;
+        info.shaderName = { "shaders/hiz.vert", "shaders/hiz.frag" };
+        info.compareOp = VK_COMPARE_OP_ALWAYS;
+        info.pushConstantSize = 16;
+        info.colorAttachmentFormats = std::vector<VkFormat>{ _swapchain->GetImageFormat() };
+        info.depthAttachmentFormat = VK_FORMAT_D32_SFLOAT;
+        _hizGraphicsPipeline = new GraphicsPipeline(*_device, *_descriptorSetManager, info, false);
+    }
 }
 
 void Application::CreateComputePipeline(uint32_t pushConstantSize) {
     _computePipeline = new ComputePipeline(*_device, *_descriptorSetManager, pushConstantSize);
 }
 
-void Application::BeginRender(VkCommandBuffer cmd, uint32_t imageId)
+void Application::BeginRender(VkCommandBuffer cmd, const RenderPassInfo& renderPassInfo)
 {
     std::vector<VkRenderingAttachmentInfo> colorAttachments;
     std::vector<VkRenderingAttachmentInfo> depthAttachments;
 
-    VkRenderingAttachmentInfo info {};
+    VkRenderingAttachmentInfo info{};
     info.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-    info.imageView = _swapchain->GetImageView(imageId);
+    info.imageView = renderPassInfo.colorImageView;
     info.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
     info.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     info.clearValue.color = { 0.1, 0.1, 0.1, 1.0 };
     colorAttachments.push_back(info);
 
-    if (_depthBuffer != nullptr) {
-        VkRenderingAttachmentInfo info {};
-        info.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-        info.imageView = _depthBuffer->GetImageView();
-        info.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
-        info.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        info.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        info.clearValue.depthStencil.depth = 1.0;
-        depthAttachments.push_back(info);
-    }
+    VkRenderingAttachmentInfo depthInfo{};
+    depthInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+    depthInfo.imageView = renderPassInfo.depthImageView;
+    depthInfo.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+    depthInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    depthInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    //depthInfo.clearValue.depthStencil.depth = 1.0;
+    depthAttachments.push_back(depthInfo);
 
     VkRenderingInfo renderingInfo {};
     renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
     renderingInfo.renderArea.offset = { 0, 0 };
-    renderingInfo.renderArea.extent = { _swapchain->GetExtent().width, _swapchain->GetExtent().height };
+    renderingInfo.renderArea.extent = renderPassInfo.extent2D;
 
     renderingInfo.layerCount = 1;
     renderingInfo.colorAttachmentCount = static_cast<uint32_t>(colorAttachments.size());
@@ -287,6 +454,23 @@ void Application::BeginRender(VkCommandBuffer cmd, uint32_t imageId)
     renderingInfo.pStencilAttachment = nullptr;
 
     vkCmdBeginRendering(cmd, &renderingInfo);
+}
+
+void Application::BlitImage(VkCommandBuffer cmd, VkImage srcImage, VkImage dstImage, const glm::ivec4& srcRegion, const glm::ivec4& dstRegion) {
+    VkImageBlit blitInfo{};
+    blitInfo.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    blitInfo.srcSubresource.layerCount = 1;
+
+    blitInfo.srcOffsets[0] = VkOffset3D{ srcRegion.x, srcRegion.y, 0 };
+    blitInfo.srcOffsets[1] = VkOffset3D{ srcRegion.z, srcRegion.w, 1 };
+
+    blitInfo.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    blitInfo.dstSubresource.layerCount = 1;
+
+    blitInfo.dstOffsets[0] = VkOffset3D{ dstRegion.x, dstRegion.y, 0 };
+    blitInfo.dstOffsets[1] = VkOffset3D{ dstRegion.z, dstRegion.w, 1 };
+
+    vkCmdBlitImage(cmd, srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blitInfo, VK_FILTER_LINEAR);
 }
 
 void Application::EndRender(VkCommandBuffer cmd)
@@ -299,9 +483,9 @@ void Application::PushConstant(VkCommandBuffer cmd, VkPipelineLayout pipelineLay
     vkCmdPushConstants(cmd, pipelineLayout, VK_SHADER_STAGE_ALL_GRAPHICS | VK_SHADER_STAGE_COMPUTE_BIT, 0, size, p);
 }
 
-void Application::BindGraphicsPipeline(VkCommandBuffer cmd)
+void Application::BindGraphicsPipeline(VkCommandBuffer cmd, VkPipeline pipeline)
 {
-    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline->GetPipeline());
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 }
 
 void Application::BindComputePipeline(VkCommandBuffer cmd) {
@@ -317,26 +501,25 @@ void Application::BindVertexAndIndicesBuffer(VkCommandBuffer cmd)
     vkCmdBindIndexBuffer(cmd, _indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 }
 
-void Application::BindDescriptorSets(VkCommandBuffer cmd, VkPipelineBindPoint usage, VkPipelineLayout pipelineLayout)
+void Application::BindDescriptorSets(VkCommandBuffer cmd, VkPipelineBindPoint usage, VkPipelineLayout pipelineLayout, uint32_t id, VkDescriptorSet descriptorSet)
 {
-    auto& bufferSet = _descriptorSetManager->GetBindlessBufferSet();
-    vkCmdBindDescriptorSets(cmd, usage, pipelineLayout, 0, 1, &bufferSet, 0, nullptr);
+    vkCmdBindDescriptorSets(cmd, usage, pipelineLayout, id, 1, &descriptorSet, 0, nullptr);
 }
 
-void Application::SetViewportAndScissor(VkCommandBuffer cmd)
+void Application::SetViewportAndScissor(VkCommandBuffer cmd, VkExtent2D extent2D)
 {
     VkViewport viewport {};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
-    viewport.width = static_cast<uint32_t>(_swapchain->GetExtent().width);
-    viewport.height = static_cast<uint32_t>(_swapchain->GetExtent().height);
+    viewport.width = static_cast<uint32_t>(extent2D.width);
+    viewport.height = static_cast<uint32_t>(extent2D.height);
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
     vkCmdSetViewport(cmd, 0, 1, &viewport);
 
     VkRect2D scissor {};
     scissor.offset = { 0, 0 };
-    scissor.extent = _swapchain->GetExtent();
+    scissor.extent = extent2D;
     vkCmdSetScissor(cmd, 0, 1, &scissor);
 }
 
@@ -368,8 +551,14 @@ void Application::UpdateUniformBuffers(uint32_t imageId)
     glm::mat4 view = _camera->getViewMatrix();
     glm::mat4 proj = _camera->getProjMatrix();
 
+    glm::mat4 model2 = glm::mat4(1.f);
+    glm::mat4 view2 = _camera2->getViewMatrix();
+    glm::mat4 proj2 = _camera2->getProjMatrix();
+
     _ubo.mvp = proj * view * model;
     _ubo.view = view * model;
+    _ubo.proj = proj;
+    _ubo.mvp2 = proj2 * view2 * model2;
 
     if (GetMouseLeftDown()) {
         _camera->rotateByScreenX(_camera->getTarget(), GetMouseHorizontalMove() * 0.015);
@@ -379,6 +568,11 @@ void Application::UpdateUniformBuffers(uint32_t imageId)
     }
 
     _uniformBuffers[imageId]->Update(&_ubo, sizeof(UniformBuffers));
+}
+
+void Application::InitIndirectBuffer(uint32_t imageId) {
+    std::vector<uint32_t> initBuffer = { 3 * 128, 0, 0, 0 };
+    _indirectBuffers[imageId]->Update(initBuffer.data(), initBuffer.size() * sizeof(uint32_t));
 }
 
 void Application::AcquireNextImage(uint32_t frameId, uint32_t& imageId)
@@ -540,14 +734,21 @@ void Application::CleanUp()
         CleanUp(buffer);
     for (auto& buffer : _visibilityClusterBuffers)
         CleanUp(buffer);
+    CleanUp(_tmpImage);
+    _hizImage->CleanUpImageView(_device->GetDevice(),_hizImageView);
+    CleanUp(_hizImage);
+    CleanUp(_depthSampler);
+    CleanUp(_hizSampler);
     CleanUp(_packedBuffer);
     CleanUp(_constContextBuffer);
+    CleanUp(_instanceOffsetBuffer);
    /* for (auto& buffer : _packedClusters)
         CleanUp(buffer);*/
     CleanUp(_descriptorSetManager);
     if (!_useInstance)
         CleanBuffer(_device->GetDevice());
     CleanUp(_graphicsPipeline);
+    CleanUp(_hizGraphicsPipeline);
     CleanUp(_computePipeline);
     CleanUp(_syncObjects);
     CleanUp(_commandPool);
@@ -555,6 +756,7 @@ void Application::CleanUp()
     CleanUp(_window);
     CleanUp(_device);
     CleanUp(_camera);
+    CleanUp(_camera2);
 }
 
 void Application::CleanBuffer(VkDevice device)

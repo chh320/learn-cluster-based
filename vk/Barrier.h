@@ -15,6 +15,7 @@ namespace Vk {
 		VkImageLayout oldLayout;
 		VkImageLayout newLayout;
 		VkImageAspectFlags aspectMask;
+		uint32_t baseMipLevel;
 
 		ImageBarrier(VkImage& image,
 			VkPipelineStageFlags2 srcStage,
@@ -23,8 +24,9 @@ namespace Vk {
 			VkAccessFlags2 dstAccess,
 			VkImageLayout oldLayout,
 			VkImageLayout newLayout,
-			VkImageAspectFlags aspectMask
-		) : image(image), srcStage(srcStage) , srcAccess(srcAccess) , dstStage(dstStage) , dstAccess(dstAccess), oldLayout(oldLayout), newLayout(newLayout), aspectMask(aspectMask){}
+			VkImageAspectFlags aspectMask,
+			uint32_t baseMipLevel = 0
+		) : image(image), srcStage(srcStage) , srcAccess(srcAccess) , dstStage(dstStage) , dstAccess(dstAccess), oldLayout(oldLayout), newLayout(newLayout), aspectMask(aspectMask), baseMipLevel(baseMipLevel){}
 	};
 
 	struct BufferBarrier {
@@ -60,8 +62,9 @@ namespace Vk {
 				imageBarrier.newLayout = barrier.newLayout;
 				imageBarrier.image = barrier.image;
 				imageBarrier.subresourceRange.aspectMask = barrier.aspectMask;
-				imageBarrier.subresourceRange.levelCount = 1; // todo : check
+				imageBarrier.subresourceRange.levelCount = 1; 
 				imageBarrier.subresourceRange.layerCount = 1;
+				imageBarrier.subresourceRange.baseMipLevel = barrier.baseMipLevel;
 				
 				ImageMemoryBarriers.push_back(imageBarrier);
 			}

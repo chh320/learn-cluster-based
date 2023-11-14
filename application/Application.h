@@ -8,12 +8,15 @@
 #include "GraphicsPipeline.h"
 #include "ComputePipeline.h"
 #include "Image.h"
+#include "Sampler.h"
 #include "SwapChain.h"
 #include "SyncObjects.h"
 #include "VkConfig.h"
 #include "VkWindow.h"
+#include "RenderPass.h"
 
 #include "Camera.h"
+#include "Util.h"
 
 #include <iostream>
 #include <string>
@@ -25,17 +28,22 @@ struct RenderConfig {
     int32_t height;
     bool isWireFrame;
     bool useInstance;
+    glm::vec3 instanceXYZ;
+    uint32_t maxMipSize;
 };
 
 struct UniformBuffers {
     UniformBuffers()
         : mvp(glm::mat4(1.f))
         , view(glm::mat4(1.f))
+        , proj(glm::mat4(1.f))
         , viewMode(0)
     {
     }
     glm::mat4 mvp;
     glm::mat4 view;
+    glm::mat4 proj;
+    glm::mat4 mvp2;
     uint32_t viewMode;
 };
 
@@ -54,25 +62,30 @@ public:
     void CreateDescriptorSetManager();
 
     void CreateCamera();
+    void CreateHizDepthImage();
+    void CreateImageSampler();
     void CreateInstanceBuffers( std::vector<uint32_t>& packedData);
+    void BindImageDescriptorSets();
     void CreateFrameContextBuffers();
     void CreateCommandBuffer();
     void RecordCommand();
     void CreateSyncObjects();
     void Run( std::vector<uint32_t>& packedData);
-    void BeginRender(VkCommandBuffer cmd, uint32_t imageId);
+    void BeginRender(VkCommandBuffer cmd, const RenderPassInfo& renderPassInfo);
     void EndRender(VkCommandBuffer cmd);
     void PushConstant(VkCommandBuffer cmd, VkPipelineLayout pipelineLayout, uint32_t size, void* p);
-    void BindGraphicsPipeline(VkCommandBuffer cmd);
+    void BlitImage(VkCommandBuffer cmd, VkImage srcImage, VkImage dstImage,const glm::ivec4& srcRegion, const glm::ivec4& dstRegion);
+    void BindGraphicsPipeline(VkCommandBuffer cmd, VkPipeline pipeline);
     void BindComputePipeline(VkCommandBuffer cmd);
     void BindVertexAndIndicesBuffer(VkCommandBuffer cmd);
-    void BindDescriptorSets(VkCommandBuffer cmd, VkPipelineBindPoint usage, VkPipelineLayout pipelineLayout);
-    void SetViewportAndScissor(VkCommandBuffer cmd);
+    void BindDescriptorSets(VkCommandBuffer cmd, VkPipelineBindPoint usage, VkPipelineLayout pipelineLayout, uint32_t id, VkDescriptorSet descriptorSet);
+    void SetViewportAndScissor(VkCommandBuffer cmd, VkExtent2D extent2D);
     void Dispatch(VkCommandBuffer cmd, uint32_t x, uint32_t y, uint32_t z);
     void Draw(VkCommandBuffer cmd);
     void DrawIndirect(VkCommandBuffer cmd, uint32_t id);
 
     void UpdateUniformBuffers(uint32_t imageId);
+    void InitIndirectBuffer(uint32_t imageId);
     void AcquireNextImage(uint32_t frameId, uint32_t& imageId);
     void WaitForFence(uint32_t frameId);
     void ResetFence(uint32_t frameId);
@@ -119,8 +132,14 @@ private:
     Device* _device;
     SwapChain* _swapchain;
     GraphicsPipeline* _graphicsPipeline;
+    GraphicsPipeline* _hizGraphicsPipeline;
     ComputePipeline* _computePipeline;
     Image* _depthBuffer;
+    Image* _hizImage;
+    Image* _tmpImage;
+    VkImageView _hizImageView;
+    ImageSampler* _depthSampler;
+    ImageSampler* _hizSampler;
     DescriptorSetManager* _descriptorSetManager;
     SyncObjects* _syncObjects;
 
@@ -139,11 +158,19 @@ private:
 
     Buffer* _packedBuffer;
     Buffer* _constContextBuffer;
+    Buffer* _instanceOffsetBuffer;
 
     uint32_t _clustersNum;
+    uint32_t _groupsNum;
+    uint32_t _instanceNum;
     uint32_t _indicesSize;
 
+    glm::vec3 _instanceXYZ;
+    uint32_t _maxMipSize;
+    uint32_t _hizMipLevels;
+
     Core::Camera* _camera;
+    Core::Camera* _camera2;
     UniformBuffers _ubo;
 
     struct {

@@ -298,8 +298,8 @@ float MeshSimplifierImpl::Evaluate(const glm::vec3& v0, const glm::vec3& v1, boo
         v = v0;
     else if (!lock0 && lock1)
         v = v1;
-    else if (!q.Get(v))
-        v = (v0 + v1) * 0.5f;
+    else
+        q.Get(v);
 
     if (!isValidVertex(v)) {
         v = (v0 + v1) * 0.5f;

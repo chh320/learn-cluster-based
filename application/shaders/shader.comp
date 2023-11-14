@@ -8,8 +8,16 @@ layout(set = 0, binding = 0) buffer BindlessBuffer{
     uint data[];
 } inputData[];
 
+layout(set = 1, binding = 0) uniform sampler2D hizMipMap[];
+
 layout(push_constant) uniform constant{
     uint imageid;
+    uint nearPlaneDepth;
+    uint farPlaneDepth;
+    uint instanceNum;
+    uint width;
+    uint height;
+    uint maxHipSize;
 } pushConstant;
 
 uint imageCnt(){
@@ -17,36 +25,82 @@ uint imageCnt(){
 }
 
 struct Cluster{
+    vec4 sphereBounds;
     vec4 lodBounds;
     vec4 parentLodBounds;
     float lodError;
     float maxParentLodError;
 };
 
+struct Group{
+    uint clustersNum;
+    uint clusterIdOffset;
+    float maxParentLodError;
+    vec4 lodBounds;
+};
+
 struct FrameContext{
     mat4 mvp;
     mat4 view;
+    mat4 proj;
 };
+
+uint GetClusterId(Group group, uint i){
+    uint idx = 1 + 3 * imageCnt();
+    uint offset = group.clusterIdOffset + i;
+    return inputData[idx].data[offset];
+}
 
 Cluster GetCluster(uint clusterId){
 	Cluster cluster;
 	uint idx = 1 + 3 * imageCnt();
-    uint offset = 4 + 16 * clusterId;
+    uint offset = 4 + 20 * clusterId;
 
-	cluster.lodBounds.x         = uintBitsToFloat(inputData[idx].data[offset + 4]);
-	cluster.lodBounds.y         = uintBitsToFloat(inputData[idx].data[offset + 5]);
-	cluster.lodBounds.z         = uintBitsToFloat(inputData[idx].data[offset + 6]);
-	cluster.lodBounds.w         = uintBitsToFloat(inputData[idx].data[offset + 7]);
+    cluster.sphereBounds.x      = uintBitsToFloat(inputData[idx].data[offset + 4]);
+	cluster.sphereBounds.y      = uintBitsToFloat(inputData[idx].data[offset + 5]);
+	cluster.sphereBounds.z      = uintBitsToFloat(inputData[idx].data[offset + 6]);
+	cluster.sphereBounds.w      = uintBitsToFloat(inputData[idx].data[offset + 7]);
 
-	cluster.parentLodBounds.x   = uintBitsToFloat(inputData[idx].data[offset + 8]);
-	cluster.parentLodBounds.y   = uintBitsToFloat(inputData[idx].data[offset + 9]);
-	cluster.parentLodBounds.z   = uintBitsToFloat(inputData[idx].data[offset + 10]);
-	cluster.parentLodBounds.w   = uintBitsToFloat(inputData[idx].data[offset + 11]);
+	cluster.lodBounds.x         = uintBitsToFloat(inputData[idx].data[offset + 8]);
+	cluster.lodBounds.y         = uintBitsToFloat(inputData[idx].data[offset + 9]);
+	cluster.lodBounds.z         = uintBitsToFloat(inputData[idx].data[offset + 10]);
+	cluster.lodBounds.w         = uintBitsToFloat(inputData[idx].data[offset + 11]);
 
-    cluster.lodError            = uintBitsToFloat(inputData[idx].data[offset + 12]);
-    cluster.maxParentLodError   = uintBitsToFloat(inputData[idx].data[offset + 13]);
+	cluster.parentLodBounds.x   = uintBitsToFloat(inputData[idx].data[offset + 12]);
+	cluster.parentLodBounds.y   = uintBitsToFloat(inputData[idx].data[offset + 13]);
+	cluster.parentLodBounds.z   = uintBitsToFloat(inputData[idx].data[offset + 14]);
+	cluster.parentLodBounds.w   = uintBitsToFloat(inputData[idx].data[offset + 15]);
+
+    cluster.lodError            = uintBitsToFloat(inputData[idx].data[offset + 16]);
+    cluster.maxParentLodError   = uintBitsToFloat(inputData[idx].data[offset + 17]);
 
 	return cluster;
+}
+
+Group GetGroup(uint groupId){
+	Group group;
+	uint idx = 1 + 3 * imageCnt();
+    uint offset = inputData[idx].data[2] + 8 * groupId;
+
+    group.clustersNum           = inputData[idx].data[offset + 0];
+    group.clusterIdOffset       = inputData[idx].data[offset + 1];
+    group.maxParentLodError     = uintBitsToFloat(inputData[idx].data[offset + 2]);
+
+	group.lodBounds.x         = uintBitsToFloat(inputData[idx].data[offset + 4]);
+	group.lodBounds.y         = uintBitsToFloat(inputData[idx].data[offset + 5]);
+	group.lodBounds.z         = uintBitsToFloat(inputData[idx].data[offset + 6]);
+	group.lodBounds.w         = uintBitsToFloat(inputData[idx].data[offset + 7]);
+
+	return group;
+}
+
+vec3 GetInstanceOffset(uint instanceId){
+    uint idx = 2 + 3 * imageCnt();
+    vec3 offset;
+    offset.x = uintBitsToFloat(inputData[idx].data[instanceId * 3 + 0]);
+    offset.y = uintBitsToFloat(inputData[idx].data[instanceId * 3 + 1]);
+    offset.z = uintBitsToFloat(inputData[idx].data[instanceId * 3 + 2]);
+    return offset;
 }
 
 FrameContext GetFrameContext(){
@@ -70,6 +124,15 @@ FrameContext GetFrameContext(){
 		context.view[i] = p;
 	}
 
+    for(int i = 0; i < 4; i++){
+		vec4 p;
+		p.x = uintBitsToFloat(inputData[idx].data[i * 4 + 32]);
+		p.y = uintBitsToFloat(inputData[idx].data[i * 4 + 1 + 32]);
+		p.z = uintBitsToFloat(inputData[idx].data[i * 4 + 2 + 32]);
+		p.w = uintBitsToFloat(inputData[idx].data[i * 4 + 3 + 32]);
+		context.proj[i] = p;
+	}
+
 	return context;
 }
 
@@ -78,48 +141,155 @@ uint GetClustersNum(){
     return inputData[idx].data[0];
 }
 
+uint GetGroupsNum(){
+    uint idx = 1 + 3 * imageCnt();
+    return inputData[idx].data[1];
+}
 
-void InitArguments(){
+uint CalHighBit(uint num) {
+    uint result = 0, t = 16, y = 0;
+    for (uint t = 16; t > 0; t >>= 1) {
+        y = -((num >> t) == 0 ? 0 : 1);
+        result += y & t;
+        num >>= (y & t);
+    }
+    return result;
+}
+
+/*void InitArguments(){
     uint id = pushConstant.imageid + 1;
     inputData[id].data[0] = 128 * 3;
     inputData[id].data[1] = 0;
     inputData[id].data[2] = 0;
     inputData[id].data[3] = 0;
-}
+}*/
 
-
-bool CheckLod(mat4 view, vec4 bound, float error){
+bool CheckLod(mat4 view, vec3 bound, float radius, float error){
     vec3 p = (view * vec4(bound.xyz, 1.0)).xyz;
-    float d = max(length(p) - bound.w, 0);
-    float theta = radians(40) / 1080.0f;
+    float d = max(length(p) - radius, 0);
+    float theta = 1.0 * radians(60) / pushConstant.height;                  // fov = 60
     return theta * d >= error;
 }
 
-void AddCluster(uint clusterId){
+void AddCluster(uint clusterId, uint instanceId){
     uint visilityBufferId = pushConstant.imageid + 1 + imageCnt();          // visibility buffer
     uint indirectBufferId = pushConstant.imageid + 1;                       // indirect buffer
     uint pos = atomicAdd(inputData[indirectBufferId].data[1], 1);
-    inputData[visilityBufferId].data[pos] = clusterId;
+    inputData[visilityBufferId].data[pos * 2]       = clusterId;
+    inputData[visilityBufferId].data[pos * 2 + 1]   = instanceId;
+}
+
+// culling ----------------------------------------------------------
+
+bool FrustumCull(mat4 projMatrix, vec3 center, float radius){
+    vec3 normalOfLeftPlane      = normalize(vec3( projMatrix[0][0], 0, 1));
+    vec3 normalOfRightPlane     = normalize(vec3(-projMatrix[0][0], 0, 1));
+    vec3 normalOfTopPlane       = normalize(vec3(0,  projMatrix[1][1], 1));
+    vec3 normalOfBottomPlane    = normalize(vec3(0, -projMatrix[1][1], 1));
+
+    bool isVisible = true;
+    isVisible = isVisible && dot(normalOfLeftPlane,     center) < radius;
+    isVisible = isVisible && dot(normalOfRightPlane,    center) < radius;
+    isVisible = isVisible && dot(normalOfTopPlane,      center) < radius;
+    isVisible = isVisible && dot(normalOfBottomPlane,   center) < radius;
+
+    return isVisible;
+}
+
+vec2 ProjectSphere(float u, float v, float radius){
+    float t = sqrt(u * u + v * v - radius * radius);
+    float M = (v * radius - u * t) / (u * radius + v * t);
+    float m = (v * radius + u * t) / (u * radius - v * t);
+    return vec2(m, M);
+}
+
+vec4 Sphere2ClipRectangle(mat4 projMatrix, vec3 center, float radius){
+    vec2 xRange = ProjectSphere(center.x, center.z, radius) * projMatrix[0][0];
+    vec2 yRange = ProjectSphere(center.y, center.z, radius) * projMatrix[1][1];
+    return vec4(xRange.x, yRange.y, xRange.y, yRange.x);
+}
+
+ivec4 ToScreenRectangle(vec4 rectangle){
+    rectangle = clamp(rectangle* 0.5 + 0.5, 0, 1);
+    return ivec4(floor(rectangle.x * pushConstant.width), 
+                floor(rectangle.y * pushConstant.height), 
+                ceil(rectangle.z * pushConstant.width), 
+                ceil(rectangle.w * pushConstant.height));
+}
+
+ivec4 Mip0ToMip1(ivec4 rectangle){
+    uint tmpX = (rectangle.x + 1) * pushConstant.maxHipSize;
+    uint x = tmpX / pushConstant.width;
+    if(tmpX % pushConstant.width == 0) x--;
+
+    uint tmpY = (rectangle.y + 1) * pushConstant.maxHipSize;
+    uint y = tmpY / pushConstant.height;
+    if(tmpY % pushConstant.height == 0) y--;
+
+    uint z = (rectangle.z - 1) * pushConstant.maxHipSize / pushConstant.width;
+    if(z < x) z = x;
+
+    uint w = (rectangle.w - 1) * pushConstant.maxHipSize / pushConstant.height;
+    if(w < y) w = y;
+
+    return ivec4(x, y, z, w);
+}
+
+bool HizCull(mat4 projMatrix, vec3 center, float radius){
+    vec4 rectangle = Sphere2ClipRectangle(projMatrix, center, radius);
+    ivec4 screenRectangle = ToScreenRectangle(rectangle);
+    ivec4 hizRectangle = Mip0ToMip1(screenRectangle);
+    uint lodLevel = CalHighBit(max(hizRectangle.z - hizRectangle.x, hizRectangle.w - hizRectangle.y));
+
+    uint idx = CalHighBit(pushConstant.maxHipSize) + 2;         // mipmapLevels + depthImage + hizImage
+    vec2 uv = (hizRectangle.xy + 0.5) / vec2(pushConstant.maxHipSize);
+
+    float x = textureLod        (hizMipMap[idx], uv, lodLevel).x;
+    float y = textureLodOffset  (hizMipMap[idx], uv, lodLevel, ivec2(1, 0)).x;
+    float z = textureLodOffset  (hizMipMap[idx], uv, lodLevel, ivec2(1, 1)).x;
+    float w = textureLodOffset  (hizMipMap[idx], uv, lodLevel, ivec2(0, 1)).x;
+
+    float minZ = min(min(x, y), min(z, w));
+    
+    float nz = center.z + radius;
+    nz = projMatrix[2][3] / nz + projMatrix[2][2];
+
+    return nz > minZ;
 }
 
 void main(){
-    uint clusterId = gl_GlobalInvocationID.x;
-    uint clusterNum = GetClustersNum();
+    uint groupId = gl_GlobalInvocationID.x / pushConstant.instanceNum;
+    uint instanceId = gl_GlobalInvocationID.x % pushConstant.instanceNum;
+    uint groupNum = GetGroupsNum();
 
-    if(clusterId == 0){
-        InitArguments();
-    }
+    //barrier();
 
-    barrier();
-
-    if(clusterId < clusterNum){
-        Cluster cluster = GetCluster(clusterId);
+    if(groupId < groupNum){
         FrameContext context = GetFrameContext();
+        Group group = GetGroup(groupId);
+        vec3 instanceOffset = GetInstanceOffset(instanceId);
+        bool parentCheck = CheckLod(context.view, group.lodBounds.xyz + instanceOffset, group.lodBounds.w, group.maxParentLodError);
+        if(!parentCheck){
+            for(int i = 0; i < group.clustersNum; i++){
+                uint clusterId = GetClusterId(group, i);
+                Cluster cluster = GetCluster(clusterId);
+                bool clusterCheck = CheckLod(context.view, cluster.lodBounds.xyz + instanceOffset, cluster.lodBounds.w, cluster.lodError);
+                if(clusterCheck){
+                    vec3 sphereBoundCenter = (context.view * vec4(cluster.sphereBounds.xyz + instanceOffset, 1.0)).xyz;
+                    float sphereBoundRadius = cluster.sphereBounds.w;
+                    
+                    if(sphereBoundCenter.z - sphereBoundRadius < -uintBitsToFloat(pushConstant.nearPlaneDepth) 
+                    && sphereBoundCenter.z + sphereBoundRadius > -uintBitsToFloat(pushConstant.farPlaneDepth)){    // farther than near plane & nearer than far plane of frustum
+                        bool isVisible = FrustumCull(context.proj, sphereBoundCenter, sphereBoundRadius);      
 
-        bool parentCheck = CheckLod(context.view, cluster.parentLodBounds, cluster.maxParentLodError);
-        bool clusterCheck = CheckLod(context.view, cluster.lodBounds, cluster.lodError);
-        if(!parentCheck && clusterCheck){
-            AddCluster(clusterId);
+                        if(isVisible && sphereBoundCenter.z + sphereBoundRadius < -uintBitsToFloat(pushConstant.nearPlaneDepth)) 
+                        {   
+                            isVisible = HizCull(context.proj, sphereBoundCenter, sphereBoundRadius);
+                        }
+                        if(isVisible) AddCluster(clusterId, instanceId);
+                    }
+                }
+            }
         }
     }
 }

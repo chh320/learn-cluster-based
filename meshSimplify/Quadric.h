@@ -34,6 +34,8 @@ namespace Core {
 				{ac, bc, c2, 0},
 				{ad, bd, cd, 1}
 			};
+
+
 			glm::dmat4 inv = glm::inverse(m);
 			glm::dvec4 v = inv[3];
 			p = glm::vec3(v);

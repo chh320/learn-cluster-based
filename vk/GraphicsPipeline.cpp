@@ -3,13 +3,13 @@
 #include <iostream>
 
 namespace Vk {
-	GraphicsPipeline::GraphicsPipeline(const Device& device, const SwapChain& swapChain, const DescriptorSetManager& descriptorSetManager, uint32_t pushConstantSize, bool useInstace, bool isWireFrame)
+	GraphicsPipeline::GraphicsPipeline(const Device& device, const DescriptorSetManager& descriptorSetManager, const RenderInfo& info, bool isWireFrame)
 		: _device(device.GetDevice()), _isWireFrame(isWireFrame)
 	{
 		std::vector<VkVertexInputBindingDescription> vertexBindings;
 		std::vector<VkVertexInputAttributeDescription> attributes;
 
-		if (!useInstace) {
+		if (!info.useInstance) {
 			vertexBindings = { Vertex::GetBindingDescription() };
 			attributes = Vertex::GetAttributeDescriptions();
 		}
@@ -29,14 +29,14 @@ namespace Vk {
 		VkViewport viewport = {};
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
-		viewport.width = static_cast<float>(swapChain.GetExtent().width);
-		viewport.height = static_cast<float>(swapChain.GetExtent().height);
+		viewport.width = static_cast<float>(info.viewWidth);
+		viewport.height = static_cast<float>(info.viewHeight);
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 
 		VkRect2D scissor = {};
 		scissor.offset = { 0, 0 };
-		scissor.extent = swapChain.GetExtent();
+		scissor.extent = VkExtent2D{ info.viewWidth , info.viewHeight };
 
 		VkPipelineViewportStateCreateInfo viewportState = {};
 		viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -71,13 +71,13 @@ namespace Vk {
 		depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 		depthStencil.depthTestEnable = VK_TRUE;
 		depthStencil.depthWriteEnable = VK_TRUE;
-		depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+		depthStencil.depthCompareOp = (VkCompareOp)info.compareOp;
 		depthStencil.depthBoundsTestEnable = VK_FALSE;
-		depthStencil.minDepthBounds = 0.0f; // Optional
-		depthStencil.maxDepthBounds = 1.0f; // Optional
+		//depthStencil.minDepthBounds = 0.0f; // Optional
+		//depthStencil.maxDepthBounds = 1.0f; // Optional
 		depthStencil.stencilTestEnable = VK_FALSE;
-		depthStencil.front = {}; // Optional
-		depthStencil.back = {}; // Optional
+		//depthStencil.front = {}; // Optional
+		//depthStencil.back = {}; // Optional
 
 		VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
 		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -109,15 +109,8 @@ namespace Vk {
 		// todo: renderpass
 
 		// Load shaders.
-		std::string vertFileName;
-		if (!useInstace) {
-			vertFileName = "shaders/shaderObject.vert";
-		}
-		else {
-			vertFileName = "shaders/shaderInstance.vert";
-		}
-		auto vert_code = ShaderModule::ReadFile(vertFileName, shaderc_glsl_vertex_shader);
-		auto frag_code = ShaderModule::ReadFile("shaders/shader.frag", shaderc_glsl_fragment_shader);
+		auto vert_code = ShaderModule::ReadFile(info.shaderName.first, shaderc_glsl_vertex_shader);
+		auto frag_code = ShaderModule::ReadFile(info.shaderName.second, shaderc_glsl_fragment_shader);
 
 		const ShaderModule vertShader(_device, vert_code);
 		const ShaderModule fragShader(_device, frag_code);
@@ -132,7 +125,7 @@ namespace Vk {
 		VkPushConstantRange pushConstant{};
 		pushConstant.stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS | VK_SHADER_STAGE_COMPUTE_BIT;
 		pushConstant.offset = 0;
-		pushConstant.size = pushConstantSize;
+		pushConstant.size = info.pushConstantSize;
 
 		VkDescriptorSetLayout layouts[2] = {
 			descriptorSetManager.GetBindlessBufferLayout(),
@@ -150,11 +143,11 @@ namespace Vk {
 
 		// VULKAN 1.3 : without renderpass
 		VkPipelineRenderingCreateInfo renderingInfo{};
-		std::vector<VkFormat> colorFormat{ swapChain.GetImageFormat() };
+		//std::vector<VkFormat> colorFormat{ swapChain.GetImageFormat() };
 		renderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
-		renderingInfo.colorAttachmentCount = colorFormat.size();
-		renderingInfo.pColorAttachmentFormats = colorFormat.data();
-		renderingInfo.depthAttachmentFormat = VK_FORMAT_D32_SFLOAT;
+		renderingInfo.colorAttachmentCount = info.colorAttachmentFormats.size();
+		renderingInfo.pColorAttachmentFormats = info.colorAttachmentFormats.size() ? info.colorAttachmentFormats.data() : nullptr;
+		renderingInfo.depthAttachmentFormat = info.depthAttachmentFormat;
 
 		// Create graphic pipeline
 		VkGraphicsPipelineCreateInfo pipelineInfo = {};

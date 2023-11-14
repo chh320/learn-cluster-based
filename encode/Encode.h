@@ -17,16 +17,21 @@ public:
     {
         Util::Timer timer;
 
-        packedData.push_back(vmesh.GetClusters().size());
-        packedData.push_back(vmesh.GetClusters()[vmesh.GetClusters().size() - 1].mipLevel);
-        packedData.push_back(0);
+        packedData.push_back(vmesh.GetClusters().size());           // clusters num
+        packedData.push_back(vmesh.GetClusterGroups().size());      // groups num
+        packedData.push_back(0);                                    // group data offset
         packedData.push_back(0);
 
         for (auto& cluster : vmesh.GetClusters()) {
-            packedData.push_back(cluster.verts.size()); // vertex nums
-            packedData.push_back(0); // vertex data offset
-            packedData.push_back(cluster.indices.size() / 3); // triangle nums
-            packedData.push_back(0); // vertex id data offset
+            packedData.push_back(cluster.verts.size());         // vertex nums
+            packedData.push_back(0);                            // vertex data offset
+            packedData.push_back(cluster.indices.size() / 3);   // triangle nums
+            packedData.push_back(0);                            // vertex id data offset
+
+            packedData.push_back(Util::Float2Uint(cluster.sphereBounds.center.x));
+            packedData.push_back(Util::Float2Uint(cluster.sphereBounds.center.y));
+            packedData.push_back(Util::Float2Uint(cluster.sphereBounds.center.z));
+            packedData.push_back(Util::Float2Uint(cluster.sphereBounds.radius));
 
             packedData.push_back(Util::Float2Uint(cluster.lodBounds.center.x));
             packedData.push_back(Util::Float2Uint(cluster.lodBounds.center.y));
@@ -47,9 +52,22 @@ public:
             packedData.push_back(cluster.mipLevel);
         }
 
+        packedData[2] = packedData.size();
+        for (auto& group : vmesh.GetClusterGroups()) {
+            packedData.push_back(group.clusters.size());    // group cluster num
+            packedData.push_back(0);                        // group cluster offset
+            packedData.push_back(Util::Float2Uint(group.maxParentLodError));
+            packedData.push_back(0);
+
+            packedData.push_back(Util::Float2Uint(group.lodBounds.center.x));
+            packedData.push_back(Util::Float2Uint(group.lodBounds.center.y));
+            packedData.push_back(Util::Float2Uint(group.lodBounds.center.z));
+            packedData.push_back(Util::Float2Uint(group.lodBounds.radius));
+        }
+
         auto i = 0;
         for (auto& cluster : vmesh.GetClusters()) {
-            auto offset = 4 + 16 * i;
+            auto offset = 4 + 20 * i;
             packedData[offset + 1] = packedData.size();
             for (auto& v : cluster.verts) {
                 packedData.push_back(Util::Float2Uint(v.x));
@@ -68,6 +86,17 @@ public:
             }
             i++;
         }
+
+        i = 0;
+        for (auto& group : vmesh.GetClusterGroups()) {
+            uint32_t offset = packedData[2] + 8 * i;
+            packedData[offset + 1] = packedData.size();
+            for (auto clusterId : group.clusters) {
+                packedData.push_back(clusterId);
+            }
+            i++;
+        }
+
         std::cout << "size: " << packedData.size() * 4 << " bytes\n";
         timer.log("Success pack mesh data");
 
@@ -90,7 +119,7 @@ public:
         std::cout << "Loading packed mesh data ...\n";
         file.read(packedData.data(), file.size());
         timer.log("Success load packed mesh data");
-        std::cerr << "Cluster nums : " << packedData[0] << "\n" << "Total mip levels : " << packedData[1] << "\n\n";
+        std::cerr << "Cluster nums : " << packedData[0] << "\n" << "Group nums : " << packedData[1] << "\n\n";
 
         return true;
     }

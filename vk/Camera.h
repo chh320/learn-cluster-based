@@ -100,7 +100,8 @@ namespace Core {
 		}
 
 		void _updateProjMatrix() {
-			proj_ = glm::perspective(glm::radians(fov_), aspect_, zNear_, zFar_);
+			proj_ = glm::perspectiveRH_ZO(glm::radians(fov_), aspect_, zFar_, zNear_ );	// reverse z
+			//proj_ = glm::perspective(glm::radians(fov_), aspect_, zNear_, zFar_);
 			proj_[1][1] *= -1;
 		}
 

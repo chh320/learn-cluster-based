@@ -30,8 +30,7 @@ namespace Vk {
 			vmaUnmapMemory(_allocator, _allocation);
 		}
 
-		template<typename T>
-		static void UpdateDescriptorSets(const std::vector<T>& bufferData, VkDevice device, VkDescriptorSet descriptorSet, uint32_t dstArrayElement) {
+		static void UpdateDescriptorSets(const std::vector<Buffer*>& bufferData, VkDevice device, VkDescriptorSet descriptorSet, uint32_t dstArrayElement) {
 			std::vector<VkDescriptorBufferInfo> bufferInfos(bufferData.size());
 			uint32_t i = 0;
 			for (auto& bufferInfo : bufferInfos) {

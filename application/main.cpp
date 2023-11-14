@@ -11,10 +11,12 @@
 int main()
 {
     Vk::RenderConfig config {};
-    config.width = 1280;
-    config.height = 800;
+    config.width = 1920;
+    config.height = 1080;
     config.isWireFrame = false;
     config.useInstance = true;
+    config.instanceXYZ = glm::vec3(10, 10, 4);
+    config.maxMipSize = 1024;
 
     bool isRebuildVirtualMesh = false;
 
