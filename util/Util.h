@@ -20,6 +20,11 @@ namespace Util {
         return *((uint32_t*)&x);
     }
 
+    inline float Uint2Float(uint32_t x)
+    {
+        return *((float*)&x);
+    }
+
     inline uint32_t CalHighBit(uint32_t num) {
         uint32_t result = 0, t = 16, y = 0;
         for (uint16_t t = 16; t > 0; t >>= 1) {

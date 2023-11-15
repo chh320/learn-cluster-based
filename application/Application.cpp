@@ -8,13 +8,14 @@ Application::Application(const RenderConfig& config)
     : _instanceXYZ(config.instanceXYZ)
     , _maxMipSize(config.maxMipSize)
     , _useInstance(config.useInstance)
+    , _modelScale(1.0)
 {
     InitWindow(config.width, config.height);
     CreateDevice(enableValidationLayers);
     CreateSwapChain();
     CreateDescriptorSetManager();
     CreateGraphicsPipeline(8, config.isWireFrame);
-    CreateComputePipeline(28);
+    CreateComputePipeline(32);
     CreateFrameContextBuffers();
 }
 
@@ -79,18 +80,18 @@ void Application::SetEvents()
 }
 
 void Application::CreateCamera()
-{
+{   
     glm::vec3 pos       = glm::vec3(0.f, 0.f, 3.f);
     glm::vec3 target    = glm::vec3(0.f);
     glm::vec3 worldUp   = glm::vec3(0.f, 1.f, 0.f);
     float fov           = 60.f;
     float aspect        = (float)_swapchain->GetExtent().width / _swapchain->GetExtent().height;
     float zNear         = 0.1f;
-    float zFar          = 100.f;
+    float zFar          = FLT_MAX;
     _camera = new Core::Camera(pos, target, worldUp, fov, aspect, zNear, zFar);
 
-    pos     = glm::vec3(_instanceXYZ.x * 0.5 * 5, _instanceXYZ.z * 2 * 5, _instanceXYZ.y * 0.5 * 5);
-    target  = glm::vec3(_instanceXYZ.x * 0.5 * 5,                    0.f, _instanceXYZ.y * 0.5 * 5);
+    pos     = glm::vec3(_instanceXYZ.x * 0.5 * 5, std::max(std::max(_instanceXYZ.z * 5.0, _instanceXYZ.x * 0.5 * 5), _instanceXYZ.y * 0.5 * 5), _instanceXYZ.y * 0.5 * 5);
+    target  = glm::vec3(_instanceXYZ.x * 0.5 * 5, 0.f, _instanceXYZ.y * 0.5 * 5);
     worldUp = glm::vec3(0.f, 0.f, -1.f);
     fov     = 90.f;
     _camera2 = new Core::Camera(pos, target, worldUp, fov, aspect, zNear, zFar);
@@ -100,6 +101,10 @@ void Application::CreateInstanceBuffers(std::vector<uint32_t>& packedData)
 {
     _clustersNum = packedData[0];
     _groupsNum = packedData[1];
+    float radius = std::abs(Util::Uint2Float(packedData[packedData[2] + 8 * (_groupsNum - 1) + 7]));
+    _modelScale = pow(10, -std::floor(std::log10(radius)));
+    //std::cout << radius << " " << _modelScale << "\n";
+
     int imageCnt = _swapchain->GetImageCount();
 
     // buffer array [0] : const context
@@ -162,6 +167,7 @@ void Application::RecordCommand()
     pushConstants.push_back(_window->GetWidth());                       // width
     pushConstants.push_back(_window->GetHeight());                      // height
     pushConstants.push_back(_maxMipSize);                               // max mip size
+    pushConstants.push_back(Util::Float2Uint(_modelScale));             // model scale
 
     std::vector<uint32_t> graphicsPushConstants(2);
 
@@ -170,7 +176,7 @@ void Application::RecordCommand()
         pushConstants[0] = i;
         BindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, _computePipeline->GetPipelineLayout(), 0, _descriptorSetManager->GetBindlessBufferSet());
         BindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, _computePipeline->GetPipelineLayout(), 1, _descriptorSetManager->GetBindlessImageSet());
-        PushConstant(cmd, _computePipeline->GetPipelineLayout(), 28, pushConstants.data());
+        PushConstant(cmd, _computePipeline->GetPipelineLayout(), 32, pushConstants.data());
         {
             BufferBarrier bufferBarrier(_indirectBuffers[i]->GetBuffer(), _indirectBuffers[i]->GetSize(), 0, 0, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_ACCESS_SHADER_WRITE_BIT);
             Barrier::PipelineBarrier(cmd, std::vector<ImageBarrier>(), std::vector<BufferBarrier>{ bufferBarrier });
@@ -359,24 +365,7 @@ void Application::BindImageDescriptorSets() {
     }
     Image::UpdateDescriptorSets(depthImageSample, _device->GetDevice(), _descriptorSetManager->GetBindlessImageSet(), 0);
 
-    // todo : make a function to create image view.
     _hizImage->CreateImageView(_device->GetDevice(), VK_FORMAT_D32_SFLOAT, 0, VK_IMAGE_ASPECT_DEPTH_BIT, _hizMipLevels, _hizImage->GetImage(), _hizImageView);
-    /*VkImageViewCreateInfo createInfo = {};
-    createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    createInfo.image = _hizImage->GetImage();
-    createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    createInfo.format = VK_FORMAT_D32_SFLOAT;
-    createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-    createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-    createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-    createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-    createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-    createInfo.subresourceRange.baseMipLevel = 0;
-    createInfo.subresourceRange.levelCount = _hizMipLevels;
-    createInfo.subresourceRange.layerCount = 1;
-
-    Check(vkCreateImageView(_device->GetDevice(), &createInfo, nullptr, &_hizImageView),
-        "create image view");*/
 
     std::pair<VkImageView, VkSampler> hizImageSample = { _hizImageView, _hizSampler->GetSampler() };
     Image::UpdateDescriptorSets(std::vector<std::pair<VkImageView, VkSampler>>{ hizImageSample }, _device->GetDevice(), _descriptorSetManager->GetBindlessImageSet(), depthImageSample.size());
@@ -548,17 +537,18 @@ void Application::CreateSyncObjects()
 void Application::UpdateUniformBuffers(uint32_t imageId)
 {
     glm::mat4 model = glm::mat4(1.f);
+    model = glm::scale(model, glm::vec3(_modelScale));
     glm::mat4 view = _camera->getViewMatrix();
     glm::mat4 proj = _camera->getProjMatrix();
 
-    glm::mat4 model2 = glm::mat4(1.f);
     glm::mat4 view2 = _camera2->getViewMatrix();
     glm::mat4 proj2 = _camera2->getProjMatrix();
 
     _ubo.mvp = proj * view * model;
     _ubo.view = view * model;
     _ubo.proj = proj;
-    _ubo.mvp2 = proj2 * view2 * model2;
+    _ubo.mvp2 = proj2 * view2 * model;
+    _ubo.viewDir = glm::vec4(_camera->getViewDir(), 1.0f);
 
     if (GetMouseLeftDown()) {
         _camera->rotateByScreenX(_camera->getTarget(), GetMouseHorizontalMove() * 0.015);

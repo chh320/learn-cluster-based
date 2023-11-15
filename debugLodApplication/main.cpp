@@ -1,7 +1,7 @@
+#include "DebugLodApplication.h"
 #include "Encode.h"
 #include "Mesh.h"
 #include "VirtualMesh.h"
-#include "Application.h"
 #include "timer.h"
 #include <fstream>
 #include <iostream>
@@ -50,7 +50,7 @@ int main()
     // Render -----------------------------------------
 #pragma region render
     timer.reset();
-    Vk::Application renderer(config);
+    Vk::DebugLodApplication renderer(config);
     timer.log("Success init vulkan");
 
     // renderer.Run(mesh, vmesh);

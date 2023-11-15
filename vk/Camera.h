@@ -46,7 +46,8 @@ namespace Core {
 		}
 
 		void zoom(float dir) {
-			dir *= 0.3;		// scale value
+			float scale = 0.1;
+			dir *= scale;		// scale value
 			pos_ += dir * front_;
 			_updateViewMatrix();
 		}
@@ -71,8 +72,9 @@ namespace Core {
 		}
 
 		void moveCamera(float xpos, float ypos) {
-			xpos *= -0.01;
-			ypos *= 0.01;
+			float scale = 0.01;
+			xpos *= -scale;
+			ypos *= scale;
 			pos_ += xpos * right_ + ypos * up_;
 			target_ += xpos * right_ + ypos * up_;
 			_updateCameraVectors();
@@ -96,7 +98,7 @@ namespace Core {
 		glm::mat4 proj_;
 
 		void  _updateViewMatrix() {
-			view_ = glm::lookAt(pos_, target_, up_);
+			view_ = glm::lookAt(pos_, pos_+ front_, up_);
 		}
 
 		void _updateProjMatrix() {

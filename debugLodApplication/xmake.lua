@@ -1,0 +1,5 @@
+target("debugLodApplication")
+    add_files("*.cpp")
+    add_deps("vk", "virtualMesh", "mesh", "util", "encode")
+    set_rundir(".")
+target_end()

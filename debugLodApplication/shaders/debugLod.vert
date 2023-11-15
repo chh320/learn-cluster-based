@@ -13,16 +13,14 @@ layout(set=0,binding=0) buffer bindlessData{
 
 layout(push_constant) uniform constant{
 	uint swapchainId;
-    uint cameraId;
+    uint imageCnt;
 }pushConstants;
 
 struct FrameContext{
 	mat4 mvp;
-    mat4 view;
-    mat4 proj;
-    mat4 mvp2;
     vec4 viewDir;
     uint viewMode;	// 0:triangle 1:cluster 2:group 3:mipLevel 4: phone-model
+    uint mipLevel;
 };
 
 struct Cluster{
@@ -36,7 +34,7 @@ struct Cluster{
 };
 
 uint GetImageNum(){
-    return inputData[0].data[0];
+    return pushConstants.imageCnt;
 }
 
 FrameContext GetFrameContext(){
@@ -50,21 +48,11 @@ FrameContext GetFrameContext(){
 		p.w = uintBitsToFloat(inputData[idx].data[i * 4 + 3]);
 		context.mvp[i] = p;
 	}
-
     for(int i = 0; i < 4; i++){
-		vec4 p;
-		p.x = uintBitsToFloat(inputData[idx].data[i * 4 + 48]);
-		p.y = uintBitsToFloat(inputData[idx].data[i * 4 + 1 + 48]);
-		p.z = uintBitsToFloat(inputData[idx].data[i * 4 + 2 + 48]);
-		p.w = uintBitsToFloat(inputData[idx].data[i * 4 + 3 + 48]);
-		context.mvp2[i] = p;
+		context.viewDir[i] = uintBitsToFloat(inputData[idx].data[16 + i]);
 	}
-
-    for(int i = 0; i < 4; i++){
-		context.viewDir[i] = uintBitsToFloat(inputData[idx].data[i + 64]);
-	}
-	
-	context.viewMode = inputData[idx].data[68];
+	context.viewMode = inputData[idx].data[20];
+    context.mipLevel = inputData[idx].data[21];
 	return context;
 }
 
@@ -84,15 +72,6 @@ Cluster GetCluster(uint clusterId){
 	return cluster;
 }
 
-vec3 GetInstanceOffset(uint instanceId){
-    uint idx = 2 + 3 * GetImageNum();
-    vec3 offset;
-    offset.x = uintBitsToFloat(inputData[idx].data[instanceId * 3 + 0]);
-    offset.y = uintBitsToFloat(inputData[idx].data[instanceId * 3 + 1]);
-    offset.z = uintBitsToFloat(inputData[idx].data[instanceId * 3 + 2]);
-    return offset;
-}
-
 vec3 GetPosition(Cluster cluster, uint index){
 	uint triangleId = index / 3;
     uint id = 1 + 3 * GetImageNum();
@@ -104,16 +83,6 @@ vec3 GetPosition(Cluster cluster, uint index){
 	p.y = uintBitsToFloat(inputData[id].data[cluster.vertOffset + vertId * 3 + 1]);
 	p.z = uintBitsToFloat(inputData[id].data[cluster.vertOffset + vertId * 3 + 2]);
 	return p;
-}
-
-uint GetVisiableCluster(uint index){
-    uint visilityBufferId = pushConstants.swapchainId + 1 + GetImageNum();
-    return inputData[visilityBufferId].data[index * 2];
-}
-
-uint GetVisiableInstance(uint index){
-    uint visilityBufferId = pushConstants.swapchainId + 1 + GetImageNum();
-    return inputData[visilityBufferId].data[index * 2 + 1];
 }
 
 // --------------------------------------------
@@ -151,38 +120,33 @@ vec3 Id2Color(uint id){
 // --------------------------------------------
 
 void main(){
-    
-	uint clusterId = GetVisiableCluster(gl_InstanceIndex);
-    uint instanceId = GetVisiableInstance(gl_InstanceIndex);
-	uint indexId = gl_VertexIndex;
+	uint clusterId  = gl_InstanceIndex;
+	uint indexId    = gl_VertexIndex;
 	uint triangleId = indexId / 3;
 
 	FrameContext frameContext = GetFrameContext();
 	Cluster cluster = GetCluster(clusterId);
 
-	if(triangleId >= cluster.triangleNum ){
+	if(triangleId >= cluster.triangleNum || cluster.mipLevel != frameContext.mipLevel){
 		gl_Position.z = 0 / 0; //discard
 		return;
 	}
 
-    vec3 p = GetPosition(cluster, indexId);
-    uint id2 = Cycle3(indexId, 1);
-    uint id3 = Cycle3(indexId, 2);
-    vec3 p1 = GetPosition(cluster, id2);
-    vec3 p2 = GetPosition(cluster, id3);
+    vec3 p      = GetPosition(cluster, indexId);
+    uint id2    = Cycle3(indexId, 1);
+    uint id3    = Cycle3(indexId, 2);
+    vec3 p1     = GetPosition(cluster, id2);
+    vec3 p2     = GetPosition(cluster, id3);
     vec3 normal = normalize(cross(p1 - p, p2 - p));
 
-	if(frameContext.viewMode == 1) color = Id2Color(triangleId);
-	else if(frameContext.viewMode == 2) color = Id2Color(clusterId);
-	else if(frameContext.viewMode == 3) color = Id2Color(cluster.groupId);
-    else if(frameContext.viewMode == 4) color = Id2Color(cluster.mipLevel);
-    else if(frameContext.viewMode == 0){
-         color = max(dot(normal, -vec3(frameContext.viewDir)), 0.0) * vec3(0.8) + vec3(0.2);
-    }
+	if      (frameContext.viewMode == 0) color = Id2Color(triangleId);
+	else if (frameContext.viewMode == 2) color = Id2Color(clusterId);
+	else if (frameContext.viewMode == 3) color = Id2Color(cluster.groupId);
+    else if (frameContext.viewMode == 4) color = Id2Color(cluster.mipLevel);
+    else if (frameContext.viewMode == 1) color = abs(dot(normal, -vec3(frameContext.viewDir))) * vec3(0.8) + vec3(0.2);
 
-    vec3 instanceOffset = GetInstanceOffset(instanceId);
-    if(pushConstants.cameraId == 0)
-	    gl_Position = frameContext.mvp * vec4(p + instanceOffset, 1.0f);
-    else 
-        gl_Position = frameContext.mvp2 * vec4(p + instanceOffset, 1.0f);
+    vec4 pos = frameContext.mvp * vec4(p, 1.0f);
+    pos = pos / pos.w;
+    if(pos.z<0||pos.z>1) pos.z=0/0;
+	gl_Position = frameContext.mvp * vec4(p, 1.0f);
 }

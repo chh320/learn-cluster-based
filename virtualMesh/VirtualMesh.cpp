@@ -9,6 +9,13 @@ void VirtualMesh::Build(Mesh& mesh)
     auto& vertices = mesh.vertices;
     auto& indices = mesh.indices;
 
+    MeshSimplifier meshSimplifier(vertices.data(), vertices.size(), indices.data(), indices.size());
+    meshSimplifier.Simplify(indices.size());
+    vertices.resize(meshSimplifier.RemainingVertNum());
+    indices.resize(meshSimplifier.RemainingTriangleNum() * 3);
+    timer.log("Success simplify mesh");
+    std::cerr << "After remove duplicate vertex - verts : " << vertices.size() << " tris: " << indices.size() / 3 << "\n\n";
+
     timer.reset();
     std::cerr << "--- Begin Build Clusters ---\n\n";
     Cluster::BuildClusters(vertices, indices, _clusters);

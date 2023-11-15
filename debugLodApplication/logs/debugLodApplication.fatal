@@ -1,0 +1,260 @@
+F1115 10:50:17.847] Error: STATUS_CPP_EH_EXCEPTION
+00007FFB5B57F1B7 (ntdll): (filename not available): _C_specific_handler
+00007FFB5B59449F (ntdll): (filename not available): _chkstk
+00007FFB5B50E456 (ntdll): (filename not available): RtlFindCharInUnicodeString
+00007FFB5B544465 (ntdll): (filename not available): RtlRaiseException
+00007FFB58AD4FFC (KERNELBASE): (filename not available): RaiseException
+00007FF736DB8B2C (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367A0EF1 (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367A10AF (debugLodApplication): (filename not available): (function-name not available)
+00007FF73679F7E0 (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367881BE (debugLodApplication): (filename not available): (function-name not available)
+00007FF73678578D (debugLodApplication): (filename not available): (function-name not available)
+00007FF736791AF6 (debugLodApplication): (filename not available): (function-name not available)
+00007FF736DB66DC (debugLodApplication): (filename not available): (function-name not available)
+00007FFB5A95257D (KERNEL32): (filename not available): BaseThreadInitThunk
+00007FFB5B54AA78 (ntdll): (filename not available): RtlUserThreadStart
+
+F1115 11:03:09.946] SIGABRT: aborted
+minkernel\crts\ucrt\src\appcrt\startup\abort.cpp (71): abort
+minkernel\crts\ucrt\src\appcrt\startup\assert.cpp (175): common_assert_to_stderr<wchar_t>
+minkernel\crts\ucrt\src\appcrt\startup\assert.cpp (443): _wassert
+E:\Soft_ware\Vulkan1.3.216.0\include\vma\vk_mem_alloc.h (11761): VmaDeviceMemoryBlock::Destroy
+E:\Soft_ware\Vulkan1.3.216.0\include\vma\vk_mem_alloc.h (12300): VmaBlockVector::~VmaBlockVector
+00007FF6134B5397 (debugLodApplication): (filename not available): VmaBlockVector::`scalar deleting destructor'
+E:\Soft_ware\Vulkan1.3.216.0\include\vma\vk_mem_alloc.h (11690): vma_delete<VmaBlockVector>
+E:\Soft_ware\Vulkan1.3.216.0\include\vma\vk_mem_alloc.h (14154): VmaAllocator_T::~VmaAllocator_T
+00007FF6134B5257 (debugLodApplication): (filename not available): VmaAllocator_T::`scalar deleting destructor'
+E:\Soft_ware\Vulkan1.3.216.0\include\vma\vk_mem_alloc.h (3763): vma_delete<VmaAllocator_T>
+E:\Soft_ware\Vulkan1.3.216.0\include\vma\vk_mem_alloc.h (16020): vmaDestroyAllocator
+E:\Study\Vulkan_work\vk-nanite\vk\Device.cpp (13): Vk::Device::~Device
+00007FF613472EB7 (debugLodApplication): (filename not available): Vk::Device::`scalar deleting destructor'
+E:\Study\Vulkan_work\vk-nanite\debugLodApplication\DebugLodApplication.h (111): Vk::DebugLodApplication::CleanUp<Vk::Device>
+E:\Study\Vulkan_work\vk-nanite\debugLodApplication\DebugLodApplication.cpp (490): Vk::DebugLodApplication::CleanUp
+E:\Study\Vulkan_work\vk-nanite\debugLodApplication\DebugLodApplication.cpp (22): Vk::DebugLodApplication::~DebugLodApplication
+E:\Study\Vulkan_work\vk-nanite\debugLodApplication\main.cpp (59): main
+D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl (288): __scrt_common_main_seh
+00007FFB5A95257D (KERNEL32): (filename not available): BaseThreadInitThunk
+00007FFB5B54AA78 (ntdll): (filename not available): RtlUserThreadStart
+
+F1115 11:10:51.815] Error: STATUS_CPP_EH_EXCEPTION
+00007FFB5B57F1B7 (ntdll): (filename not available): _C_specific_handler
+00007FFB5B59449F (ntdll): (filename not available): _chkstk
+00007FFB5B50E456 (ntdll): (filename not available): RtlFindCharInUnicodeString
+00007FFB5B544465 (ntdll): (filename not available): RtlRaiseException
+00007FFB58AD4FFC (KERNELBASE): (filename not available): RaiseException
+00007FF736DB8B2C (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367A0EF1 (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367A10AF (debugLodApplication): (filename not available): (function-name not available)
+00007FF73679F7E0 (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367881BE (debugLodApplication): (filename not available): (function-name not available)
+00007FF73678578D (debugLodApplication): (filename not available): (function-name not available)
+00007FF736791AF6 (debugLodApplication): (filename not available): (function-name not available)
+00007FF736DB66DC (debugLodApplication): (filename not available): (function-name not available)
+00007FFB5A95257D (KERNEL32): (filename not available): BaseThreadInitThunk
+00007FFB5B54AA78 (ntdll): (filename not available): RtlUserThreadStart
+
+F1115 11:10:56.971] Error: STATUS_CPP_EH_EXCEPTION
+00007FFB5B57F1B7 (ntdll): (filename not available): _C_specific_handler
+00007FFB5B59449F (ntdll): (filename not available): _chkstk
+00007FFB5B50E456 (ntdll): (filename not available): RtlFindCharInUnicodeString
+00007FFB5B544465 (ntdll): (filename not available): RtlRaiseException
+00007FFB58AD4FFC (KERNELBASE): (filename not available): RaiseException
+00007FF736DB8B2C (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367A0EF1 (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367A10AF (debugLodApplication): (filename not available): (function-name not available)
+00007FF73679F7E0 (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367881BE (debugLodApplication): (filename not available): (function-name not available)
+00007FF73678578D (debugLodApplication): (filename not available): (function-name not available)
+00007FF736791AF6 (debugLodApplication): (filename not available): (function-name not available)
+00007FF736DB66DC (debugLodApplication): (filename not available): (function-name not available)
+00007FFB5A95257D (KERNEL32): (filename not available): BaseThreadInitThunk
+00007FFB5B54AA78 (ntdll): (filename not available): RtlUserThreadStart
+
+F1115 11:11:04.058] Error: STATUS_CPP_EH_EXCEPTION
+00007FFB5B57F1B7 (ntdll): (filename not available): _C_specific_handler
+00007FFB5B59449F (ntdll): (filename not available): _chkstk
+00007FFB5B50E456 (ntdll): (filename not available): RtlFindCharInUnicodeString
+00007FFB5B544465 (ntdll): (filename not available): RtlRaiseException
+00007FFB58AD4FFC (KERNELBASE): (filename not available): RaiseException
+00007FF736DB8B2C (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367A0EF1 (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367A10AF (debugLodApplication): (filename not available): (function-name not available)
+00007FF73679F7E0 (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367881BE (debugLodApplication): (filename not available): (function-name not available)
+00007FF73678578D (debugLodApplication): (filename not available): (function-name not available)
+00007FF736791AF6 (debugLodApplication): (filename not available): (function-name not available)
+00007FF736DB66DC (debugLodApplication): (filename not available): (function-name not available)
+00007FFB5A95257D (KERNEL32): (filename not available): BaseThreadInitThunk
+00007FFB5B54AA78 (ntdll): (filename not available): RtlUserThreadStart
+
+F1115 11:11:07.053] Error: STATUS_CPP_EH_EXCEPTION
+00007FFB5B57F1B7 (ntdll): (filename not available): _C_specific_handler
+00007FFB5B59449F (ntdll): (filename not available): _chkstk
+00007FFB5B50E456 (ntdll): (filename not available): RtlFindCharInUnicodeString
+00007FFB5B544465 (ntdll): (filename not available): RtlRaiseException
+00007FFB58AD4FFC (KERNELBASE): (filename not available): RaiseException
+00007FF736DB8B2C (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367A0EF1 (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367A10AF (debugLodApplication): (filename not available): (function-name not available)
+00007FF73679F7E0 (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367881BE (debugLodApplication): (filename not available): (function-name not available)
+00007FF73678578D (debugLodApplication): (filename not available): (function-name not available)
+00007FF736791AF6 (debugLodApplication): (filename not available): (function-name not available)
+00007FF736DB66DC (debugLodApplication): (filename not available): (function-name not available)
+00007FFB5A95257D (KERNEL32): (filename not available): BaseThreadInitThunk
+00007FFB5B54AA78 (ntdll): (filename not available): RtlUserThreadStart
+
+F1115 11:11:21.012] Error: STATUS_CPP_EH_EXCEPTION
+00007FFB5B57F1B7 (ntdll): (filename not available): _C_specific_handler
+00007FFB5B59449F (ntdll): (filename not available): _chkstk
+00007FFB5B50E456 (ntdll): (filename not available): RtlFindCharInUnicodeString
+00007FFB5B544465 (ntdll): (filename not available): RtlRaiseException
+00007FFB58AD4FFC (KERNELBASE): (filename not available): RaiseException
+00007FF736DB8B2C (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367A0EF1 (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367A10AF (debugLodApplication): (filename not available): (function-name not available)
+00007FF73679F7E0 (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367881BE (debugLodApplication): (filename not available): (function-name not available)
+00007FF73678578D (debugLodApplication): (filename not available): (function-name not available)
+00007FF736791AF6 (debugLodApplication): (filename not available): (function-name not available)
+00007FF736DB66DC (debugLodApplication): (filename not available): (function-name not available)
+00007FFB5A95257D (KERNEL32): (filename not available): BaseThreadInitThunk
+00007FFB5B54AA78 (ntdll): (filename not available): RtlUserThreadStart
+
+F1115 11:11:24.165] Error: STATUS_CPP_EH_EXCEPTION
+00007FFB5B57F1B7 (ntdll): (filename not available): _C_specific_handler
+00007FFB5B59449F (ntdll): (filename not available): _chkstk
+00007FFB5B50E456 (ntdll): (filename not available): RtlFindCharInUnicodeString
+00007FFB5B544465 (ntdll): (filename not available): RtlRaiseException
+00007FFB58AD4FFC (KERNELBASE): (filename not available): RaiseException
+00007FF736DB8B2C (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367A0EF1 (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367A10AF (debugLodApplication): (filename not available): (function-name not available)
+00007FF73679F7E0 (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367881BE (debugLodApplication): (filename not available): (function-name not available)
+00007FF73678578D (debugLodApplication): (filename not available): (function-name not available)
+00007FF736791AF6 (debugLodApplication): (filename not available): (function-name not available)
+00007FF736DB66DC (debugLodApplication): (filename not available): (function-name not available)
+00007FFB5A95257D (KERNEL32): (filename not available): BaseThreadInitThunk
+00007FFB5B54AA78 (ntdll): (filename not available): RtlUserThreadStart
+
+F1115 11:11:26.988] Error: STATUS_CPP_EH_EXCEPTION
+00007FFB5B57F1B7 (ntdll): (filename not available): _C_specific_handler
+00007FFB5B59449F (ntdll): (filename not available): _chkstk
+00007FFB5B50E456 (ntdll): (filename not available): RtlFindCharInUnicodeString
+00007FFB5B544465 (ntdll): (filename not available): RtlRaiseException
+00007FFB58AD4FFC (KERNELBASE): (filename not available): RaiseException
+00007FF736DB8B2C (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367A0EF1 (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367A10AF (debugLodApplication): (filename not available): (function-name not available)
+00007FF73679F7E0 (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367881BE (debugLodApplication): (filename not available): (function-name not available)
+00007FF73678578D (debugLodApplication): (filename not available): (function-name not available)
+00007FF736791AF6 (debugLodApplication): (filename not available): (function-name not available)
+00007FF736DB66DC (debugLodApplication): (filename not available): (function-name not available)
+00007FFB5A95257D (KERNEL32): (filename not available): BaseThreadInitThunk
+00007FFB5B54AA78 (ntdll): (filename not available): RtlUserThreadStart
+
+F1115 11:11:42.653] Error: STATUS_CPP_EH_EXCEPTION
+00007FFB5B57F1B7 (ntdll): (filename not available): _C_specific_handler
+00007FFB5B59449F (ntdll): (filename not available): _chkstk
+00007FFB5B50E456 (ntdll): (filename not available): RtlFindCharInUnicodeString
+00007FFB5B544465 (ntdll): (filename not available): RtlRaiseException
+00007FFB58AD4FFC (KERNELBASE): (filename not available): RaiseException
+00007FF736DB8B2C (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367A0EF1 (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367A10AF (debugLodApplication): (filename not available): (function-name not available)
+00007FF73679F7E0 (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367881BE (debugLodApplication): (filename not available): (function-name not available)
+00007FF73678578D (debugLodApplication): (filename not available): (function-name not available)
+00007FF736791AF6 (debugLodApplication): (filename not available): (function-name not available)
+00007FF736DB66DC (debugLodApplication): (filename not available): (function-name not available)
+00007FFB5A95257D (KERNEL32): (filename not available): BaseThreadInitThunk
+00007FFB5B54AA78 (ntdll): (filename not available): RtlUserThreadStart
+
+F1115 11:11:45.283] Error: STATUS_CPP_EH_EXCEPTION
+00007FFB5B57F1B7 (ntdll): (filename not available): _C_specific_handler
+00007FFB5B59449F (ntdll): (filename not available): _chkstk
+00007FFB5B50E456 (ntdll): (filename not available): RtlFindCharInUnicodeString
+00007FFB5B544465 (ntdll): (filename not available): RtlRaiseException
+00007FFB58AD4FFC (KERNELBASE): (filename not available): RaiseException
+00007FF736DB8B2C (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367A0EF1 (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367A10AF (debugLodApplication): (filename not available): (function-name not available)
+00007FF73679F7E0 (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367881BE (debugLodApplication): (filename not available): (function-name not available)
+00007FF73678578D (debugLodApplication): (filename not available): (function-name not available)
+00007FF736791AF6 (debugLodApplication): (filename not available): (function-name not available)
+00007FF736DB66DC (debugLodApplication): (filename not available): (function-name not available)
+00007FFB5A95257D (KERNEL32): (filename not available): BaseThreadInitThunk
+00007FFB5B54AA78 (ntdll): (filename not available): RtlUserThreadStart
+
+F1115 11:11:47.917] Error: STATUS_CPP_EH_EXCEPTION
+00007FFB5B57F1B7 (ntdll): (filename not available): _C_specific_handler
+00007FFB5B59449F (ntdll): (filename not available): _chkstk
+00007FFB5B50E456 (ntdll): (filename not available): RtlFindCharInUnicodeString
+00007FFB5B544465 (ntdll): (filename not available): RtlRaiseException
+00007FFB58AD4FFC (KERNELBASE): (filename not available): RaiseException
+00007FF736DB8B2C (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367A0EF1 (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367A10AF (debugLodApplication): (filename not available): (function-name not available)
+00007FF73679F7E0 (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367881BE (debugLodApplication): (filename not available): (function-name not available)
+00007FF73678578D (debugLodApplication): (filename not available): (function-name not available)
+00007FF736791AF6 (debugLodApplication): (filename not available): (function-name not available)
+00007FF736DB66DC (debugLodApplication): (filename not available): (function-name not available)
+00007FFB5A95257D (KERNEL32): (filename not available): BaseThreadInitThunk
+00007FFB5B54AA78 (ntdll): (filename not available): RtlUserThreadStart
+
+F1115 11:12:01.150] Error: STATUS_CPP_EH_EXCEPTION
+00007FFB5B57F1B7 (ntdll): (filename not available): _C_specific_handler
+00007FFB5B59449F (ntdll): (filename not available): _chkstk
+00007FFB5B50E456 (ntdll): (filename not available): RtlFindCharInUnicodeString
+00007FFB5B544465 (ntdll): (filename not available): RtlRaiseException
+00007FFB58AD4FFC (KERNELBASE): (filename not available): RaiseException
+00007FF736DB8B2C (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367A0EF1 (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367A10AF (debugLodApplication): (filename not available): (function-name not available)
+00007FF73679F7E0 (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367881BE (debugLodApplication): (filename not available): (function-name not available)
+00007FF73678578D (debugLodApplication): (filename not available): (function-name not available)
+00007FF736791AF6 (debugLodApplication): (filename not available): (function-name not available)
+00007FF736DB66DC (debugLodApplication): (filename not available): (function-name not available)
+00007FFB5A95257D (KERNEL32): (filename not available): BaseThreadInitThunk
+00007FFB5B54AA78 (ntdll): (filename not available): RtlUserThreadStart
+
+F1115 11:12:03.867] Error: STATUS_CPP_EH_EXCEPTION
+00007FFB5B57F1B7 (ntdll): (filename not available): _C_specific_handler
+00007FFB5B59449F (ntdll): (filename not available): _chkstk
+00007FFB5B50E456 (ntdll): (filename not available): RtlFindCharInUnicodeString
+00007FFB5B544465 (ntdll): (filename not available): RtlRaiseException
+00007FFB58AD4FFC (KERNELBASE): (filename not available): RaiseException
+00007FF736DB8B2C (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367A0EF1 (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367A10AF (debugLodApplication): (filename not available): (function-name not available)
+00007FF73679F7E0 (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367881BE (debugLodApplication): (filename not available): (function-name not available)
+00007FF73678578D (debugLodApplication): (filename not available): (function-name not available)
+00007FF736791AF6 (debugLodApplication): (filename not available): (function-name not available)
+00007FF736DB66DC (debugLodApplication): (filename not available): (function-name not available)
+00007FFB5A95257D (KERNEL32): (filename not available): BaseThreadInitThunk
+00007FFB5B54AA78 (ntdll): (filename not available): RtlUserThreadStart
+
+F1115 11:12:06.898] Error: STATUS_CPP_EH_EXCEPTION
+00007FFB5B57F1B7 (ntdll): (filename not available): _C_specific_handler
+00007FFB5B59449F (ntdll): (filename not available): _chkstk
+00007FFB5B50E456 (ntdll): (filename not available): RtlFindCharInUnicodeString
+00007FFB5B544465 (ntdll): (filename not available): RtlRaiseException
+00007FFB58AD4FFC (KERNELBASE): (filename not available): RaiseException
+00007FF736DB8B2C (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367A0EF1 (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367A10AF (debugLodApplication): (filename not available): (function-name not available)
+00007FF73679F7E0 (debugLodApplication): (filename not available): (function-name not available)
+00007FF7367881BE (debugLodApplication): (filename not available): (function-name not available)
+00007FF73678578D (debugLodApplication): (filename not available): (function-name not available)
+00007FF736791AF6 (debugLodApplication): (filename not available): (function-name not available)
+00007FF736DB66DC (debugLodApplication): (filename not available): (function-name not available)
+00007FFB5A95257D (KERNEL32): (filename not available): BaseThreadInitThunk
+00007FFB5B54AA78 (ntdll): (filename not available): RtlUserThreadStart
+

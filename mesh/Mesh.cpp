@@ -7,7 +7,7 @@
 namespace Core {
 	bool Mesh::LoadMesh(std::string filePath) {
 		Assimp::Importer importer;
-		auto scene = importer.ReadFile(filePath.c_str(), 0);
+		auto scene = importer.ReadFile(filePath.c_str(), aiProcess_Triangulate);
 		if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
 			std::cerr << "Error loading model: " << importer.GetErrorString() << std::endl;
 			return false;
@@ -17,6 +17,7 @@ namespace Core {
 			aiMesh* mesh = scene->mMeshes[i];
 			auto vertexCnt = mesh->mNumVertices;
 			auto indiceCnt = mesh->mNumFaces * 3;
+			//auto normal = mesh->mNormals;
 
 			vertices.resize(vertexCnt);
 			//std::vector<glm::vec3>().swap(vertices);
@@ -39,33 +40,33 @@ namespace Core {
 		return true;
 	}
 
-	bool Mesh::SimplifyMesh() {
-		Util::HashTable verticeHT(vertices.size());
-		std::vector<glm::vec3> remainVertNum;
-		std::vector<uint32_t> oldIdToNewId(vertices.size());
+	//bool Mesh::SimplifyMesh() {
+	//	Util::HashTable verticeHT(vertices.size());
+	//	std::vector<glm::vec3> remainVertNum;
+	//	std::vector<uint32_t> oldIdToNewId(vertices.size());
 
-		for (uint32_t i = 0; i < vertices.size(); i++) {
-			auto firstId = verticeHT.First(Util::HashTable::HashValue(vertices[i]));
-			bool hasSameVertex = false;
-			for (auto id = firstId; verticeHT.IsValid(id); id = verticeHT.Next(id)) {
-				if (vertices[id] == vertices[i]) {
-					hasSameVertex = true;
-					indices[i] = oldIdToNewId[id];
-					break;
-				}
-			}
-			if (!hasSameVertex) {
-				verticeHT.Add(Util::HashTable::HashValue(vertices[i]), i);
-				remainVertNum.emplace_back(vertices[i]);
-				oldIdToNewId[i] = remainVertNum.size() - 1;
-				indices[i] = oldIdToNewId[i];
-			}
-		}
+	//	for (uint32_t i = 0; i < vertices.size(); i++) {
+	//		auto firstId = verticeHT.First(Util::HashTable::HashValue(vertices[i]));
+	//		bool hasSameVertex = false;
+	//		for (auto id = firstId; verticeHT.IsValid(id); id = verticeHT.Next(id)) {
+	//			if (vertices[id] == vertices[i]) {
+	//				hasSameVertex = true;
+	//				indices[i] = oldIdToNewId[id];
+	//				break;
+	//			}
+	//		}
+	//		if (!hasSameVertex) {
+	//			verticeHT.Add(Util::HashTable::HashValue(vertices[i]), i);
+	//			remainVertNum.emplace_back(vertices[i]);
+	//			oldIdToNewId[i] = remainVertNum.size() - 1;
+	//			indices[i] = oldIdToNewId[i];
+	//		}
+	//	}
 
-		remainVertNum.swap(vertices);
-		//int maxN = 0;
-		//for (int i = 0; i < indices.size(); i++) maxN = maxN > indices[i] ? maxN : indices[i];
-		//std::cout << maxN  << " " << remainVertNum.size() << "\n";
-		return true;
-	}
+	//	remainVertNum.swap(vertices);
+	//	//int maxN = 0;
+	//	//for (int i = 0; i < indices.size(); i++) maxN = maxN > indices[i] ? maxN : indices[i];
+	//	//std::cout << maxN  << " " << remainVertNum.size() << "\n";
+	//	return true;
+	//}
 }

@@ -37,6 +37,7 @@ struct UniformBuffers {
         : mvp(glm::mat4(1.f))
         , view(glm::mat4(1.f))
         , proj(glm::mat4(1.f))
+        , viewDir(glm::vec4(1.f))
         , viewMode(0)
     {
     }
@@ -44,6 +45,7 @@ struct UniformBuffers {
     glm::mat4 view;
     glm::mat4 proj;
     glm::mat4 mvp2;
+    glm::vec4 viewDir;
     uint32_t viewMode;
 };
 
@@ -172,6 +174,8 @@ private:
     Core::Camera* _camera;
     Core::Camera* _camera2;
     UniformBuffers _ubo;
+
+    float _modelScale;
 
     struct {
         bool lDown = false, rDown = false;

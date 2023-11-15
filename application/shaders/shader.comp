@@ -18,6 +18,7 @@ layout(push_constant) uniform constant{
     uint width;
     uint height;
     uint maxHipSize;
+    uint modelScale;
 } pushConstant;
 
 uint imageCnt(){
@@ -59,20 +60,20 @@ Cluster GetCluster(uint clusterId){
     cluster.sphereBounds.x      = uintBitsToFloat(inputData[idx].data[offset + 4]);
 	cluster.sphereBounds.y      = uintBitsToFloat(inputData[idx].data[offset + 5]);
 	cluster.sphereBounds.z      = uintBitsToFloat(inputData[idx].data[offset + 6]);
-	cluster.sphereBounds.w      = uintBitsToFloat(inputData[idx].data[offset + 7]);
+	cluster.sphereBounds.w      = uintBitsToFloat(inputData[idx].data[offset + 7]) * uintBitsToFloat(pushConstant.modelScale);
 
 	cluster.lodBounds.x         = uintBitsToFloat(inputData[idx].data[offset + 8]);
 	cluster.lodBounds.y         = uintBitsToFloat(inputData[idx].data[offset + 9]);
 	cluster.lodBounds.z         = uintBitsToFloat(inputData[idx].data[offset + 10]);
-	cluster.lodBounds.w         = uintBitsToFloat(inputData[idx].data[offset + 11]);
+	cluster.lodBounds.w         = uintBitsToFloat(inputData[idx].data[offset + 11])* uintBitsToFloat(pushConstant.modelScale);
 
-	cluster.parentLodBounds.x   = uintBitsToFloat(inputData[idx].data[offset + 12]);
-	cluster.parentLodBounds.y   = uintBitsToFloat(inputData[idx].data[offset + 13]);
-	cluster.parentLodBounds.z   = uintBitsToFloat(inputData[idx].data[offset + 14]);
-	cluster.parentLodBounds.w   = uintBitsToFloat(inputData[idx].data[offset + 15]);
+	//cluster.parentLodBounds.x   = uintBitsToFloat(inputData[idx].data[offset + 12]);
+	//cluster.parentLodBounds.y   = uintBitsToFloat(inputData[idx].data[offset + 13]);
+	//cluster.parentLodBounds.z   = uintBitsToFloat(inputData[idx].data[offset + 14]);
+	//cluster.parentLodBounds.w   = uintBitsToFloat(inputData[idx].data[offset + 15])* uintBitsToFloat(pushConstant.modelScale);
 
-    cluster.lodError            = uintBitsToFloat(inputData[idx].data[offset + 16]);
-    cluster.maxParentLodError   = uintBitsToFloat(inputData[idx].data[offset + 17]);
+    cluster.lodError            = uintBitsToFloat(inputData[idx].data[offset + 16])* uintBitsToFloat(pushConstant.modelScale);
+    //cluster.maxParentLodError   = uintBitsToFloat(inputData[idx].data[offset + 17])* uintBitsToFloat(pushConstant.modelScale);
 
 	return cluster;
 }
@@ -84,12 +85,12 @@ Group GetGroup(uint groupId){
 
     group.clustersNum           = inputData[idx].data[offset + 0];
     group.clusterIdOffset       = inputData[idx].data[offset + 1];
-    group.maxParentLodError     = uintBitsToFloat(inputData[idx].data[offset + 2]);
+    group.maxParentLodError     = uintBitsToFloat(inputData[idx].data[offset + 2])* uintBitsToFloat(pushConstant.modelScale);
 
 	group.lodBounds.x         = uintBitsToFloat(inputData[idx].data[offset + 4]);
 	group.lodBounds.y         = uintBitsToFloat(inputData[idx].data[offset + 5]);
 	group.lodBounds.z         = uintBitsToFloat(inputData[idx].data[offset + 6]);
-	group.lodBounds.w         = uintBitsToFloat(inputData[idx].data[offset + 7]);
+	group.lodBounds.w         = uintBitsToFloat(inputData[idx].data[offset + 7])* uintBitsToFloat(pushConstant.modelScale);
 
 	return group;
 }
@@ -252,9 +253,9 @@ bool HizCull(mat4 projMatrix, vec3 center, float radius){
     float minZ = min(min(x, y), min(z, w));
     
     float nz = center.z + radius;
-    nz = projMatrix[2][3] / nz + projMatrix[2][2];
-
-    return nz > minZ;
+    //nz = (projMatrix[2][3] / nz + projMatrix[2][2]);              // ndc z
+    nz = -projMatrix[3][2] / nz - projMatrix[2][2];
+    return nz + 0.015 > minZ;                                        // bias counter z-fighting
 }
 
 void main(){
