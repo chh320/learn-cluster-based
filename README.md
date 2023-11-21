@@ -16,9 +16,8 @@ Graphics API is using vulkan 1.3.
 
 Lucy : 28055742 triangles
 
-| ![lucy-phone](.\image\lucy-phone.png)     | ![lucy-tri](.\image\lucy-tri.png)     |
+| ![Alt text](images/lucy-phone.png)    | ![Alt text](images/lucy-tri.png)     |
 | ----------------------------------------- | ------------------------------------- |
-| ![lucy-cluster](.\image\lucy-cluster.png) | ![lucy-group](.\image\lucy-group.png) |
+| ![Alt text](images/lucy-cluster.png) | ![Alt text](images/lucy-group.png) |
 
-![lucy](.\image\lucy.gif)
-
+![Alt text](images/lucy.gif)
