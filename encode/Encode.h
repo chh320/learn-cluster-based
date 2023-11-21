@@ -119,7 +119,7 @@ public:
         std::cout << "Loading packed mesh data ...\n";
         file.read(packedData.data(), file.size());
         timer.log("Success load packed mesh data");
-        std::cerr << "Cluster nums : " << packedData[0] << "\n" << "Group nums : " << packedData[1] << "\n\n";
+        std::cerr << "Cluster nums : " << packedData[0] << "\nGroup nums : " << packedData[1] << "\nMipLevel nums : "<< packedData[4 + 20 * packedData[0] - 1] + 1 << "\n\n";
 
         return true;
     }

@@ -145,7 +145,7 @@ void MeshSimplifierImpl::Simplify(uint32_t targetTriangleNum)
     heap.Resize(edges.size());
     uint32_t i = 0;
     for (auto& edge : edges) {
-        float error = Evaluate(edge.second, edge.first, false);
+        float error = Evaluate(edge.first, edge.second, false);
         heap.Add(error, i);
         i++;
     }
@@ -279,16 +279,30 @@ float MeshSimplifierImpl::Evaluate(const glm::vec3& v0, const glm::vec3& v1, boo
         error += 0.5 * (adjTriangles.size() - 24);
     }
 
+    /*glm::vec3 BoundsMin = {  FLT_MAX,  FLT_MAX,  FLT_MAX };
+    glm::vec3 BoundsMax = { -FLT_MAX, -FLT_MAX, -FLT_MAX };*/
+
     Quadric q;
     for (auto i : adjTriangles) {
         q.Add(triQuadrics[i]);
     }
 
     glm::vec3 v = (v0 + v1) * 0.5f;
+    //q.Get(v);
+
 
     auto isValidVertex = [&](const glm::vec3& v) -> bool {
         if (glm::length(v - v0) + glm::length(v - v1) > 2 * glm::length(v0 - v1))
             return false;
+        glm::vec3 p[3];
+        for (auto i : adjTriangles) {
+            for(int j = 0; j < 3; j++) p[j] = vertices[indices[i * 3 + j]];
+            for (int j = 0; j < 3; j++) if (p[j] == v0 || p[j] == v1) p[j] = v;
+            if (p[0] == p[1] || p[0] == p[2] || p[1] == p[2]) continue;
+            glm::vec3 n1 = glm::cross(p[1] - p[0], p[2] - p[0]);
+            glm::vec3 n2 = glm::cross(p[1] - p[0], p[2] - p[0]);
+            if (glm::dot(n1, n2) < 0) return false;
+        }
         return true;
     };
 
@@ -298,10 +312,9 @@ float MeshSimplifierImpl::Evaluate(const glm::vec3& v0, const glm::vec3& v1, boo
         v = v0;
     else if (!lock0 && lock1)
         v = v1;
-    else
-        q.Get(v);
 
     if (!isValidVertex(v)) {
+        error += 100.f;
         v = (v0 + v1) * 0.5f;
     }
 
@@ -447,7 +460,7 @@ void MeshSimplifierImpl::Compact()
         if (vertexRefs[i] > 0) {
             if (i != vertCnt)
                 vertices[vertCnt] = vertices[i];
-            vertexRefs[i] = vertCnt++;
+            vertexRefs[i] = vertCnt++;      // reuse
         }
     }
     assert(vertCnt == remainingVertNum);

@@ -21,7 +21,7 @@ int main()
     bool isRebuildVirtualMesh = false;
 
     Util::Timer timer;
-    const std::string modelFileName = "../assets/models/hairball.obj";
+    const std::string modelFileName = "../assets/models/happy_vrip.ply";
     std::string packedfileName = modelFileName.substr(0, modelFileName.find_last_of('.')) + ".txt";
     std::vector<uint32_t> packedData;
 

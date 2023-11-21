@@ -28,8 +28,6 @@ namespace Vk {
         int32_t height;
         bool isWireFrame;
         bool useInstance;
-        glm::vec3 instanceXYZ;
-        uint32_t maxMipSize;
     };
 
     struct UniformBuffers {
@@ -139,6 +137,7 @@ namespace Vk {
 
         uint32_t _clustersNum;
         uint32_t _groupsNum;
+        uint32_t _MipLevelNum;
         uint32_t _indicesSize;
 
         Core::Camera* _camera;

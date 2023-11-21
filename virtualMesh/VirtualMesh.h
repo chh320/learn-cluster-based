@@ -9,6 +9,7 @@ namespace Core {
 class VirtualMesh final {
 public:
     void Build(Mesh& mesh);
+    //void Compact(Mesh& mesh);
 
     const std::vector<Cluster>& GetClusters() const { return _clusters; }
     const std::vector<ClusterGroup>& GetClusterGroups() const { return _clusterGroups; }

@@ -85,8 +85,10 @@ void DebugLodApplication::CreateCamera()
 
 void DebugLodApplication::CreateInstanceBuffers(std::vector<uint32_t>& packedData)
 {
+
     _clustersNum = packedData[0];
     _groupsNum = packedData[1];
+    _MipLevelNum = packedData[4 + 20 * _clustersNum - 1] + 1;
     float radius = std::abs(Util::Uint2Float(packedData[packedData[2] + 8 * (_groupsNum - 1) + 7]));
     _modelScale = pow(10, -std::floor(std::log10(radius)));
     // std::cout << radius << " " << _modelScale << "\n";
@@ -539,10 +541,10 @@ void DebugLodApplication::OnKey(int key, int scancode, int action, int mods)
             _ubo.viewMode = (_ubo.viewMode + 1) % 5;
             break;
         case GLFW_KEY_U:
-            _ubo.mipLevel = (_ubo.mipLevel + 5 - 1) % 5;
+            _ubo.mipLevel = (_ubo.mipLevel + _MipLevelNum - 1) % _MipLevelNum;
             break;
         case GLFW_KEY_I:
-            _ubo.mipLevel = (_ubo.mipLevel + 1) % 5;
+            _ubo.mipLevel = (_ubo.mipLevel + 1) % _MipLevelNum;
             break;
         default:
             break;

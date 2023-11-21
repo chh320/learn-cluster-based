@@ -143,7 +143,7 @@ void main(){
 	else if (frameContext.viewMode == 2) color = Id2Color(clusterId);
 	else if (frameContext.viewMode == 3) color = Id2Color(cluster.groupId);
     else if (frameContext.viewMode == 4) color = Id2Color(cluster.mipLevel);
-    else if (frameContext.viewMode == 1) color = abs(dot(normal, -vec3(frameContext.viewDir))) * vec3(0.8) + vec3(0.2);
+    else if (frameContext.viewMode == 1) color = max(dot(normal, -vec3(frameContext.viewDir)), 0.0) * vec3(0.8) + vec3(0.2);
 
     vec4 pos = frameContext.mvp * vec4(p, 1.0f);
     pos = pos / pos.w;

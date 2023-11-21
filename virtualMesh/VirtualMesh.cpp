@@ -2,6 +2,7 @@
 #include "timer.h"
 
 namespace Core {
+
 void VirtualMesh::Build(Mesh& mesh)
 {
     Util::Timer timer;
@@ -23,15 +24,19 @@ void VirtualMesh::Build(Mesh& mesh)
     std::cerr << "Cluster size: " << _clusters.size() << "\n\n";
 
     std::cerr << "--- Begin Build DAG ---\n\n";
-    uint32_t levelOffset = 0, mipLevel = 0;
-    while (1) {
+    uint32_t levelOffset = 0, mipLevel = 0, maxMipLevel = 8, preClusterNum = 0;
+    int n = 6;
+    while (n) {
         std::cout << "- Level: " << mipLevel << "\nClusters num is: " << _clusters.size() - levelOffset << "\n";
 
         auto clusterNums = _clusters.size() - levelOffset;
-        if (clusterNums <= 1) {
-            _clusters[_clusters.size() - 1].groupId = 0;
+        if (clusterNums <= 2) {
+           // _clusters[_clusters.size() - 1].groupId = _clusterGroups.size();
             break;
         }
+
+        if (preClusterNum == clusterNums) break;
+        preClusterNum = _clusters.size() - levelOffset;
 
         auto preClusterNums = _clusters.size();
         auto preGroupNums = _clusterGroups.size();
@@ -40,7 +45,7 @@ void VirtualMesh::Build(Mesh& mesh)
         ClusterGroup::BuildClusterGroups(_clusters, levelOffset, clusterNums, mipLevel, _clusterGroups);
         std::cout << "Group num is: " << _clusterGroups.size() - preGroupNums << "\n";
         for (auto i = preGroupNums; i < _clusterGroups.size(); i++) {
-            ClusterGroup::BuildParentClusters(_clusterGroups[i], _clusters);
+            ClusterGroup::BuildParentClusters(i, _clusterGroups[i], _clusters);
         }
         timer.log("Success build level " + std::to_string(mipLevel) + " DAG.");
         levelOffset = preClusterNums;

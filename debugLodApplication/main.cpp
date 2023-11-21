@@ -10,18 +10,18 @@
 
 int main()
 {
+    std::cerr << "This application is used for debug lod of virtual mesh.\n";
+
     Vk::RenderConfig config {};
     config.width = 1920;
     config.height = 1080;
     config.isWireFrame = false;
     config.useInstance = true;
-    config.instanceXYZ = glm::vec3(1, 1, 1);
-    config.maxMipSize = 1024;
 
-    bool isRebuildVirtualMesh = false;
+    bool isRebuildVirtualMesh = true;
 
     Util::Timer timer;
-    const std::string modelFileName = "../assets/models/hairball.obj";
+    const std::string modelFileName = "../assets/models/lucy.ply";
     std::string packedfileName = modelFileName.substr(0, modelFileName.find_last_of('.')) + ".txt";
     std::vector<uint32_t> packedData;
 

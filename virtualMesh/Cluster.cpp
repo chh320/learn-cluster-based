@@ -24,6 +24,7 @@ namespace Core {
 						cluster.verts.push_back(vertices[vertId]);
 					}
 					bool isExternal = false;
+					bool hasOpposedEdge = edgeLink.GetGraph()[edgeId].size() != 0;
 					for (auto [adjEdge, _] : edgeLink.GetGraph()[edgeId]) {
 						uint32_t adjTriangle = partitioner.GetSortTo(adjEdge / 3);
 						if (adjTriangle < left || adjTriangle >= right) {
@@ -31,7 +32,7 @@ namespace Core {
 							break;
 						}
 					}
-					
+					if (!hasOpposedEdge) isExternal = true;
 					if (isExternal) {
 						cluster.externalEdges.push_back(cluster.indices.size());
 					}
@@ -44,6 +45,7 @@ namespace Core {
 			cluster.sphereBounds = Sphere::FromPoints(cluster.verts, cluster.verts.size());
 			cluster.lodBounds = cluster.sphereBounds;
 			cluster.boxBounds = cluster.verts[0];
+			cluster.groupId = 0;
 			for (auto v : cluster.verts) cluster.boxBounds = cluster.boxBounds + v;
 
 			clusters.push_back(cluster);
@@ -107,7 +109,7 @@ namespace Core {
 		BuildClustersGraph(edgeLink, edge2Cluster, clusterNum, graph);
 
 		Partitioner partitioner;
-		partitioner.Partition(graph, ClusterGroup::clusterGroupSize - 4, ClusterGroup::clusterGroupSize);
+		partitioner.Partition(graph, ClusterGroup::maxClusterGroupSize - 4, ClusterGroup::maxClusterGroupSize);
 
 
 		
@@ -117,10 +119,12 @@ namespace Core {
 
 			for (auto i = left; i < right; i++) {
 				uint32_t clusterId = partitioner.GetNodeId(i);
-				clusters[clusterId + offset].groupId = clusterGroups.size();
+				//clusters[clusterId + offset].groupId = clusterGroups.size();
 				clusterGroup.clusters.push_back(clusterId + offset);
+
 				for (uint32_t edgeId = cluster2Edge[clusterId]; edgeId < edge2Cluster.size() && edge2Cluster[edgeId] == clusterId; edgeId++) {
 					bool isExternal = false;
+					bool hasOpposedEdge = edgeLink.GetGraph()[edgeId].size() != 0;
 					for (auto [adj, _] : edgeLink.GetGraph()[edgeId]) {
 						auto adjCluster = partitioner.GetSortTo(edge2Cluster[adj]);
 						if (adjCluster < left || adjCluster >= right) {
@@ -128,6 +132,7 @@ namespace Core {
 							break;
 						}
 					}
+					if (!hasOpposedEdge) isExternal = true;
 					if (isExternal) {
 						uint32_t realEdgeId = externalEdges[edgeId].second;
 						clusterGroup.externalEdges.push_back(std::pair{ clusterId + offset, realEdgeId});
@@ -140,7 +145,7 @@ namespace Core {
 
 	
 
-	void ClusterGroup::BuildParentClusters(ClusterGroup& clusterGroup, std::vector<Cluster>& clusters) {
+	void ClusterGroup::BuildParentClusters(uint32_t groupId, ClusterGroup& clusterGroup, std::vector<Cluster>& clusters) {
 		std::vector<glm::vec3> vertices;
 		std::vector<uint32_t> indices;
 		std::vector<Sphere> lodBounds;
@@ -149,6 +154,7 @@ namespace Core {
 
 		for (uint32_t clusterId : clusterGroup.clusters) {
 			auto& cluster = clusters[clusterId];
+			cluster.groupId = groupId;
 			for (const auto& v : cluster.verts) vertices.push_back(v);
 			for (const auto& id : cluster.indices) indices.push_back(id + idOffset);
 			idOffset += cluster.verts.size();
@@ -242,6 +248,7 @@ namespace Core {
 			cluster.sphereBounds = Sphere::FromPoints(cluster.verts, cluster.verts.size());
 			cluster.lodBounds = parentLodBound;
 			cluster.boxBounds = cluster.verts[0];
+			cluster.groupId = groupId + 1;
 			for (auto v : cluster.verts) cluster.boxBounds = cluster.boxBounds + v;
 
 			clusters.push_back(cluster);

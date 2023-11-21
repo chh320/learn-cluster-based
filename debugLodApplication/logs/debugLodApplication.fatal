@@ -258,3 +258,16 @@ F1115 11:12:06.898] Error: STATUS_CPP_EH_EXCEPTION
 00007FFB5A95257D (KERNEL32): (filename not available): BaseThreadInitThunk
 00007FFB5B54AA78 (ntdll): (filename not available): RtlUserThreadStart
 
+F1117 14:48:55.088] SIGABRT: aborted
+minkernel\crts\ucrt\src\appcrt\startup\abort.cpp (71): abort
+minkernel\crts\ucrt\src\appcrt\startup\assert.cpp (175): common_assert_to_stderr<wchar_t>
+minkernel\crts\ucrt\src\appcrt\startup\assert.cpp (443): _wassert
+E:\Study\Vulkan_work\vk-nanite\meshOptimizer\simplifier.cpp (1478): meshopt_simplifyEdge
+E:\Study\Vulkan_work\vk-nanite\meshOptimizer\simplifier.cpp (1638): meshopt_simplify
+E:\Study\Vulkan_work\vk-nanite\virtualMesh\Cluster.cpp (201): Core::ClusterGroup::BuildParentClusters
+E:\Study\Vulkan_work\vk-nanite\virtualMesh\VirtualMesh.cpp (44): Core::VirtualMesh::Build
+E:\Study\Vulkan_work\vk-nanite\debugLodApplication\main.cpp (46): main
+D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl (288): __scrt_common_main_seh
+00007FFEDED9257D (KERNEL32): (filename not available): BaseThreadInitThunk
+00007FFEDF5CAA78 (ntdll): (filename not available): RtlUserThreadStart
+

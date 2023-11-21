@@ -35,7 +35,8 @@ namespace Core {
 	class ClusterGroup final
 	{
 	public:
-		static const uint32_t clusterGroupSize = 32;
+		static const uint32_t maxClusterGroupSize = 32;
+		static const uint32_t minClusterGroupSize = 8;
 
 		uint32_t mipLevel;
 		std::vector<uint32_t> clusters;
@@ -45,7 +46,7 @@ namespace Core {
 		float maxParentLodError;
 
 		static void BuildClusterGroups(std::vector<Cluster>& clusters, uint32_t offset, uint32_t clusterNum, uint32_t mipLevel, std::vector<ClusterGroup>& clusterGroups);
-		static void BuildParentClusters(ClusterGroup& clusterGroup, std::vector<Cluster>& clusters);
+		static void BuildParentClusters(uint32_t groupId, ClusterGroup& clusterGroup, std::vector<Cluster>& clusters);
 		static void BuildClustersEdgeLink(std::span<const Cluster> clusters, const std::vector<std::pair<uint32_t, uint32_t>>& externalEdges, Graph& edgeLink);
 		static void BuildClustersGraph(const Graph& edgeLink, const std::vector<uint32_t>& edge2Cluster, uint32_t clusterNum, Graph& graph);
 	};
