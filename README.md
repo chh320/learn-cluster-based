@@ -20,4 +20,4 @@ Lucy : 28055742 triangles
 | ----------------------------------------- | ------------------------------------- |
 | ![lucy-cluster](image/lucy-cluster.png) | ![lucy-group](image/lucy-group.png) |
 
-![lucy](images/lucy.gif)
+![lucy](image/lucy.gif)
